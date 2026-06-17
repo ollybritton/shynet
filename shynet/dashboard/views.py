@@ -80,11 +80,15 @@ class ServiceView(
             data["start_date"], data["end_date"], self.get_segment(), self.get_engaged()
         )
         data["RESULTS_LIMIT"] = RESULTS_LIMIT
-        recent_sessions = Session.objects.filter(
-            service=self.get_object(),
-            start_time__lt=self.get_end_date(),
-            start_time__gt=self.get_start_date(),
-        ).order_by("-start_time")
+        recent_sessions = (
+            Session.objects.filter(
+                service=self.get_object(),
+                start_time__lt=self.get_end_date(),
+                start_time__gt=self.get_start_date(),
+            )
+            .annotate(num_hits=Count("hit"))
+            .order_by("-start_time")
+        )
         if self.get_segment() == "humans":
             recent_sessions = recent_sessions.filter(is_bot=False)
         elif self.get_segment() == "bots":
@@ -162,11 +166,15 @@ class ServiceSessionsListView(
         return None
 
     def get_queryset(self):
-        sessions = Session.objects.filter(
-            service=self.get_object(),
-            start_time__lt=self.get_end_date(),
-            start_time__gt=self.get_start_date(),
-        ).order_by("-start_time")
+        sessions = (
+            Session.objects.filter(
+                service=self.get_object(),
+                start_time__lt=self.get_end_date(),
+                start_time__gt=self.get_start_date(),
+            )
+            .annotate(num_hits=Count("hit"))
+            .order_by("-start_time")
+        )
         if self.get_segment() == "humans":
             sessions = sessions.filter(is_bot=False)
         elif self.get_segment() == "bots":

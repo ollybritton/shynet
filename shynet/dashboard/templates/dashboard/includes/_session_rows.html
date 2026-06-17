@@ -43,7 +43,7 @@ flow straight into the existing #session-rows container.
         </div>
         <div>
             <span class="srow__label">{% trans 'Hits' %}</span>
-            <span class="srow__num">{{ session.hit_set.count|intcomma }}</span>
+            <span class="srow__num">{{ session.num_hits|intcomma }}</span>
         </div>
     </div>
 </a>

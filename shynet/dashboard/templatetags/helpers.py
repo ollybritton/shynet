@@ -196,6 +196,23 @@ def urldisplay(url):
         return url
 
 
+@register.filter
+def path_display(url):
+    """Link to a hit's full URL but show only its path (+query), dropping the
+    host to save space in the session timeline. Only http(s) URLs are linkified
+    (mirrors urldisplay's XSS hardening); anything else is returned as plain,
+    autoescaped text. The full URL stays in the title attribute."""
+    if isinstance(url, str) and url.startswith("http"):
+        parsed = urlparse(url)
+        path = parsed.path or "/"
+        if parsed.query:
+            path += "?" + parsed.query
+        return SafeString(
+            f"<a href='{escape(url)}' title='{escape(url)}' rel='nofollow' class='truncate'>{escape(path)}</a>"
+        )
+    return url
+
+
 class ContextualURLNode(template.Node):
     """Extension of the Django URLNode to support including contextual parameters in URL outputs. In other words, URLs generated will keep the start and end date parameters."""
 

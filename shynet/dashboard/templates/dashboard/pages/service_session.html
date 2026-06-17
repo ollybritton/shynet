@@ -84,7 +84,7 @@
             </div>
             <div class="md:flex justify-between items-start mt-2">
                 <div class="mb-2 md:mb-0 md:w-1/2 md:pr-4" style="min-width:0">
-                    <p class="font-medium truncate">{% if item.hit.location %}{{item.hit.location|urlize}}{% else %}<span class="is-unknown">{% trans 'Unknown' %}</span>{% endif %}</p>
+                    <p class="font-medium truncate">{% if item.hit.location %}{{item.hit.location|path_display}}{% else %}<span class="is-unknown">{% trans 'Unknown' %}</span>{% endif %}</p>
                     {% if item.hit.referrer %}
                     <p class="text-sm" style="color: var(--global-text-color-light)">{% trans 'via' %} {{item.hit.referrer|urlize}}</p>
                     {% endif %}

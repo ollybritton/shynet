@@ -541,6 +541,123 @@ html[data-theme="dark"] .litepicker {
 .ti-users::before { content: "\ebf2"; }
 .ti-world::before { content: "\eb54"; }
 
+/* ===========================================================================
+   Bold & spacious revamp.
+
+   The base reskin above is intentionally restrained; this section turns up the
+   volume: heavier type (Sparrow's own headings are bold), generous whitespace,
+   big confident stat numbers, a solid-fill active segment, soft card lift, and
+   a sticky filter bar. Appended last so it wins the cascade.
+   =========================================================================== */
+:root {
+    --surface-pad-x: 2.1rem;
+    --surface-pad-y: 1.9rem;
+    --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 28px -14px rgba(0, 0, 0, 0.14);
+}
+
+html[data-theme="dark"] {
+    --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 12px 32px -16px rgba(0, 0, 0, 0.75);
+}
+
+/* ---- Typography: bold and characterful ------------------------------------- */
+body {
+    font-size: 1.08rem;
+    line-height: 1.65;
+}
+
+.heading,
+h1.heading,
+h2.heading,
+h3.heading,
+h4.heading {
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    color: var(--global-text-color);
+}
+
+/* The service title in the header bar reads as a real page title. */
+#heading .heading {
+    font-size: 1.8rem;
+}
+
+.supra {
+    font-weight: 600;
+    font-size: 0.74rem;
+}
+
+/* ---- Surfaces: roomy, rounded, gently lifted ------------------------------- */
+.reading-surface {
+    padding: var(--surface-pad-y) var(--surface-pad-x);
+    border-radius: 16px;
+    box-shadow: var(--card-shadow);
+}
+
+.card {
+    border-radius: 14px;
+    box-shadow: var(--card-shadow);
+}
+
+/* ---- Sticky filter bar (desktop): title + filters stay pinned -------------- */
+#heading {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: var(--global-card-bg-color);
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid var(--global-divider-color);
+}
+
+/* ---- KPIs: big, bold, joyful ----------------------------------------------- */
+.kpi-cell {
+    padding: 1.15rem 1.25rem;
+}
+
+.kpi-cell__num {
+    font-size: 2.6rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+}
+
+/* ---- Segmented control: active lens is a confident solid fill -------------- */
+.seg__item {
+    padding: 0.45rem 0.95rem;
+    font-size: 0.9rem;
+    border-radius: 9px;
+}
+
+.seg__item.is-active,
+.seg__item.is-active:hover {
+    background: var(--global-theme-color);
+    color: #fff;
+    border-color: var(--global-theme-color);
+    font-weight: 600;
+}
+
+/* ---- Pills, rows, timeline: less compact ----------------------------------- */
+.pill {
+    font-size: 0.82rem;
+    padding: 0.2rem 0.7rem;
+}
+
+.srow {
+    padding: 0.95rem 0.4rem;
+    gap: 1rem;
+}
+
+.srow__num {
+    font-size: 1.05rem;
+}
+
+.timeline__card {
+    padding: 0.85rem 1.15rem;
+}
+
+.timeline__item {
+    margin-bottom: 1.5rem;
+}
+
 /* ---- Infinite scroll (sessions list) --------------------------------------- */
 #session-sentinel {
     height: 1px;
@@ -550,37 +667,51 @@ html[data-theme="dark"] .litepicker {
     display: none;
 }
 
-/* ---- Service controls row -------------------------------------------------- */
 .service-actions {
-    gap: 0.4rem;
+    gap: 0.5rem;
 }
 
 /* ---- Larger hit areas on touch devices (any width) ------------------------- */
 @media (pointer: coarse) {
     .seg__item {
-        min-height: 40px;
-        padding: 0.5rem 0.8rem;
-        font-size: 0.9rem;
+        min-height: 42px;
+        padding: 0.55rem 0.9rem;
     }
     .srow {
-        padding-top: 0.7rem;
-        padding-bottom: 0.7rem;
+        padding-top: 0.95rem;
+        padding-bottom: 0.95rem;
     }
 }
 
 /* ---- Phone layout (below a17t's md breakpoint) ----------------------------- */
 @media (max-width: 767px) {
+    :root {
+        --surface-pad-x: 1.05rem;
+        --surface-pad-y: 1.15rem;
+    }
+
     body {
         font-size: 1rem;
     }
 
     .reading-surface {
-        padding: 0.9rem 0.95rem;
-        border-radius: 8px;
+        border-radius: 12px;
     }
 
-    /* Segmented controls wrap instead of overflowing; the per-service controls
-       row takes the full width so date range + toggles stack cleanly. */
+    /* A tall pinned header would eat the small viewport, so let it scroll away
+       on phones; controls are right at the top anyway. */
+    #heading {
+        position: static;
+        border-bottom: none;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+    #heading .heading {
+        font-size: 1.5rem;
+    }
+
+    /* Segmented controls wrap instead of overflowing; the controls row takes
+       the full width so date range + toggles stack cleanly. */
     .seg {
         flex-wrap: wrap;
         gap: 0.4rem;
@@ -598,16 +729,16 @@ html[data-theme="dark"] .litepicker {
         width: 100%;
         text-align: left;
         gap: 1.75rem;
-        padding-top: 0.3rem;
+        padding-top: 0.35rem;
         border-top: 1px dashed var(--global-divider-color);
     }
 
-    /* Two-up KPI cells: slightly smaller numbers so they don't feel cramped. */
+    /* Two-up KPI cells: still bold, just sized to fit. */
     .kpi-cell__num {
-        font-size: 1.4rem;
+        font-size: 2rem;
     }
     .kpi-cell {
-        padding: 0.5rem 0.75rem;
+        padding: 0.7rem 0.8rem;
     }
 
     /* Reclaim width in the single-session timeline. */
