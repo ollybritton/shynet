@@ -101,17 +101,17 @@
 <p class="text-sm text-gray-400 mb-4 -mt-2">
     {% if stats.segment == 'humans' %}
         {% trans 'Showing human traffic.' %}
-        {% blocktrans trimmed count counter=stats.bot_session_count with count=stats.bot_session_count|intcomma %}
-            {{ count }} bot session hidden in this range.
+        {% blocktrans trimmed with formatted=stats.bot_session_count|intcomma count counter=stats.bot_session_count %}
+            {{ formatted }} bot session hidden in this range.
         {% plural %}
-            {{ count }} bot sessions hidden in this range.
+            {{ formatted }} bot sessions hidden in this range.
         {% endblocktrans %}
     {% elif stats.segment == 'bots' %}
         {% trans 'Showing bot traffic.' %}
-        {% blocktrans trimmed count counter=stats.human_session_count with count=stats.human_session_count|intcomma %}
-            {{ count }} human session hidden in this range.
+        {% blocktrans trimmed with formatted=stats.human_session_count|intcomma count counter=stats.human_session_count %}
+            {{ formatted }} human session hidden in this range.
         {% plural %}
-            {{ count }} human sessions hidden in this range.
+            {{ formatted }} human sessions hidden in this range.
         {% endblocktrans %}
     {% else %}
         {% blocktrans trimmed with humans=stats.human_session_count|intcomma bots=stats.bot_session_count|intcomma %}
