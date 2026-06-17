@@ -130,42 +130,68 @@ class Service(models.Model):
                 # data from causing all service pages to error
                 return re.compile(r".^")
 
-    def get_daily_stats(self):
+    def get_daily_stats(self, segment="all"):
         return self.get_core_stats(
-            start_time=timezone.now() - timezone.timedelta(days=1)
+            start_time=timezone.now() - timezone.timedelta(days=1), segment=segment
         )
 
-    def get_core_stats(self, start_time=None, end_time=None):
+    def get_core_stats(self, start_time=None, end_time=None, segment="all"):
         if start_time is None:
             start_time = timezone.now() - timezone.timedelta(days=30)
         if end_time is None:
             end_time = timezone.now()
 
-        main_data = self.get_relative_stats(start_time, end_time)
+        main_data = self.get_relative_stats(start_time, end_time, segment)
         comparison_data = self.get_relative_stats(
-            start_time - (end_time - start_time), start_time
+            start_time - (end_time - start_time), start_time, segment
         )
         main_data["compare"] = comparison_data
 
         return main_data
 
-    def get_relative_stats(self, start_time, end_time):
+    def get_relative_stats(self, start_time, end_time, segment="all"):
         Session = apps.get_model("analytics", "Session")
         Hit = apps.get_model("analytics", "Hit")
 
         tz_now = timezone.now()
 
-        currently_online = Session.objects.filter(
-            service=self, last_seen__gt=tz_now - ACTIVE_USER_TIMEDELTA
+        # Segment by bot status. "humans" and "bots" filter sessions on the
+        # is_bot flag; hits inherit the filter through their session.
+        def by_segment(queryset, field="is_bot"):
+            if segment == "humans":
+                return queryset.filter(**{field: False})
+            if segment == "bots":
+                return queryset.filter(**{field: True})
+            return queryset
+
+        currently_online = by_segment(
+            Session.objects.filter(
+                service=self, last_seen__gt=tz_now - ACTIVE_USER_TIMEDELTA
+            )
         ).count()
 
-        sessions = Session.objects.filter(
+        sessions_in_range = Session.objects.filter(
             service=self, start_time__gt=start_time, start_time__lt=end_time
-        ).order_by("-start_time")
+        )
+        # Bot/human totals over the full (unsegmented) range, so the UI can
+        # always show what is being filtered regardless of the active segment.
+        human_session_count = sessions_in_range.filter(is_bot=False).count()
+        bot_session_count = sessions_in_range.filter(is_bot=True).count()
+        bot_reasons = (
+            sessions_in_range.filter(is_bot=True)
+            .values("bot_reason")
+            .annotate(count=models.Count("bot_reason"))
+            .order_by("-count")[:RESULTS_LIMIT]
+        )
+
+        sessions = by_segment(sessions_in_range).order_by("-start_time")
         session_count = sessions.count()
 
-        hits = Hit.objects.filter(
-            service=self, start_time__lt=end_time, start_time__gt=start_time
+        hits = by_segment(
+            Hit.objects.filter(
+                service=self, start_time__lt=end_time, start_time__gt=start_time
+            ),
+            field="session__is_bot",
         )
         hit_count = hits.count()
 
@@ -239,6 +265,10 @@ class Service(models.Model):
             "session_count": session_count,
             "hit_count": hit_count,
             "has_hits": has_hits,
+            "segment": segment,
+            "human_session_count": human_session_count,
+            "bot_session_count": bot_session_count,
+            "bot_reasons": bot_reasons,
             "bounce_rate_pct": bounce_count * 100 / session_count
             if session_count > 0
             else None,

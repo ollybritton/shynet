@@ -1,0 +1,13 @@
+{% load i18n %}
+{% comment %}
+Bot/human segment toggle. Links back to the current page with a different
+segment, preserving the active date range. The chosen segment is also made
+sticky across the rest of the dashboard via ContextualURLNode.CONTEXT_PARAMS.
+{% endcomment %}
+<div class="flex items-center" role="group" aria-label="{% trans 'Traffic segment' %}">
+    {% for option in segment_options %}
+    <a href="?segment={{ option.value }}{% if start_date %}&startDate={{ start_date|date:'Y-m-d' }}{% endif %}{% if end_date %}&endDate={{ end_date|date:'Y-m-d' }}{% endif %}"
+        class="button !low w-auto {% if option.active %}~urge !normal{% else %}~neutral bg-neutral-000{% endif %}{% if not forloop.first %} ml-1{% endif %}"
+        {% if option.active %}aria-current="true"{% endif %}>{{ option.name }}</a>
+    {% endfor %}
+</div>

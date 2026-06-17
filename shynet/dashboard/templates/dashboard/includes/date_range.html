@@ -3,6 +3,7 @@
 <form method="GET" id="datePicker">
     <input type="hidden" name="startDate" value="{{start_date.isoformat}}" id="startDate">
     <input type="hidden" name="endDate" value="{{end_date.isoformat}}" id="endDate">
+    {% if segment %}<input type="hidden" name="segment" value="{{segment}}">{% endif %}
 </form>
 <input type="input" id="rangePicker" placeholder="Date range" class="input ~neutral !low bg-neutral-000 cursor-pointer" style="max-width: 200px;" readonly>
 <style>

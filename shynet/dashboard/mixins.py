@@ -66,3 +66,34 @@ class DateRangeMixin:
         data["date_ranges"] = self.get_date_ranges()
 
         return data
+
+
+class SegmentMixin:
+    """Reads the ?segment= toggle (all / humans / bots) and exposes it.
+
+    Defaults to "humans" so the dashboard shows real-user traffic out of the
+    box. The model layer defaults to "all", so this default only applies to
+    the views that mix this in (not the API or digests)."""
+
+    SEGMENTS = ["humans", "bots", "all"]
+    DEFAULT_SEGMENT = "humans"
+
+    def get_segment(self):
+        segment = self.request.GET.get("segment")
+        if segment not in self.SEGMENTS:
+            return self.DEFAULT_SEGMENT
+        return segment
+
+    def get_segment_options(self):
+        labels = {"humans": "Humans", "bots": "Bots", "all": "All"}
+        active = self.get_segment()
+        return [
+            {"value": value, "name": labels[value], "active": value == active}
+            for value in self.SEGMENTS
+        ]
+
+    def get_context_data(self, **kwargs):
+        data = super().get_context_data(**kwargs)
+        data["segment"] = self.get_segment()
+        data["segment_options"] = self.get_segment_options()
+        return data

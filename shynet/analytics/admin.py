@@ -19,6 +19,8 @@ class SessionAdmin(admin.ModelAdmin):
         "ip",
         "asn",
         "country",
+        "is_bot",
+        "bot_reason",
     )
     list_display_links = ("uuid",)
     search_fields = (
@@ -30,7 +32,7 @@ class SessionAdmin(admin.ModelAdmin):
         "asn",
         "time_zone",
     )
-    list_filter = ("device_type",)
+    list_filter = ("device_type", "is_bot", "bot_reason")
     inlines = [HitInline]
 
 

@@ -12,6 +12,7 @@ from django.utils import timezone
 
 from core.models import Service
 
+from . import bot_detection
 from .models import Hit, Session
 
 log = logging.getLogger(__name__)
@@ -108,21 +109,13 @@ def ingress_request(
             log.debug(f"Found geoip2 data...")
 
             ua = user_agents.parse(user_agent)
-            device_type = "OTHER"
-            if (
-                ua.is_bot
-                or (ua.browser.family or "").strip().lower() == "googlebot"
-                or (ua.device.family or ua.device.model or "").strip().lower()
-                == "spider"
-            ):
-                device_type = "ROBOT"
-            elif ua.is_mobile:
-                device_type = "PHONE"
-            elif ua.is_tablet:
-                device_type = "TABLET"
-            elif ua.is_pc:
-                device_type = "DESKTOP"
-            if device_type == "ROBOT" and service.ignore_robots:
+            device_type, is_bot, bot_reason = bot_detection.classify(
+                user_agent,
+                ua,
+                tracker,
+                treat_pixel_as_bot=settings.BOT_DETECTION_TREAT_PIXEL_AS_BOT,
+            )
+            if is_bot and service.ignore_robots:
                 return
             session = Session.objects.create(
                 service=service,
@@ -132,6 +125,8 @@ def ingress_request(
                 browser=ua.browser.family or "",
                 device=ua.device.family or ua.device.model or "",
                 device_type=device_type,
+                is_bot=is_bot,
+                bot_reason=bot_reason,
                 start_time=time,
                 last_seen=time,
                 os=ua.os.family or "",

@@ -50,6 +50,18 @@ class Session(models.Model):
     os = models.TextField(verbose_name=_("OS"))
     ip = models.GenericIPAddressField(db_index=True, null=True, verbose_name=_("IP"))
 
+    # Authoritative bot flag the dashboard segments on. Distinct from
+    # device_type so a session can keep its real device class while still
+    # being recognised as non-human (e.g. a crawler spoofing a desktop UA).
+    is_bot = models.BooleanField(
+        default=False, db_index=True, verbose_name=_("Is bot")
+    )
+    # Short tag explaining why a session was classified as a bot, e.g.
+    # "ua-library", "known-crawler", "no-user-agent", "no-js".
+    bot_reason = models.CharField(
+        max_length=32, blank=True, default="", verbose_name=_("Bot reason")
+    )
+
     # GeoIP data
     asn = models.TextField(blank=True, verbose_name=_("Asn"))
     country = models.TextField(blank=True, verbose_name=_("Country"))

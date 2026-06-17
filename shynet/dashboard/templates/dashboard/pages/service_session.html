@@ -14,6 +14,7 @@
         <div>
             <h3 class="heading text-2xl mr-4">
                 {{session.identifier|default:"Anonymous"}}, {{session.duration|naturaldelta}}
+                {% if session.is_bot %}<span class="chip ~critical !high text-base align-middle">{% trans 'Bot' %}{% if session.bot_reason %}: {{session.bot_reason}}{% endif %}</span>{% endif %}
             </h3>
         </div>
         <div>

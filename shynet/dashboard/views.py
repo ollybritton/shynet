@@ -18,10 +18,10 @@ from analytics.models import Session, Hit
 from core.models import Service, _default_api_token, RESULTS_LIMIT
 
 from .forms import ServiceForm
-from .mixins import DateRangeMixin
+from .mixins import DateRangeMixin, SegmentMixin
 
 
-class DashboardView(LoginRequiredMixin, DateRangeMixin, ListView):
+class DashboardView(LoginRequiredMixin, DateRangeMixin, SegmentMixin, ListView):
     model = Service
     template_name = "dashboard/pages/dashboard.html"
     paginate_by = settings.DASHBOARD_PAGE_SIZE
@@ -36,7 +36,7 @@ class DashboardView(LoginRequiredMixin, DateRangeMixin, ListView):
 
         for service in data["object_list"]:
             service.stats = service.get_core_stats(
-                self.get_start_date(), self.get_end_date()
+                self.get_start_date(), self.get_end_date(), self.get_segment()
             )
 
         return data
@@ -57,7 +57,7 @@ class ServiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
 
 
 class ServiceView(
-    LoginRequiredMixin, PermissionRequiredMixin, DateRangeMixin, DetailView
+    LoginRequiredMixin, PermissionRequiredMixin, DateRangeMixin, SegmentMixin, DetailView
 ):
     model = Service
     template_name = "dashboard/pages/service.html"
@@ -66,13 +66,20 @@ class ServiceView(
     def get_context_data(self, **kwargs):
         data = super().get_context_data(**kwargs)
         data["script_protocol"] = "https://" if settings.SCRIPT_USE_HTTPS else "http://"
-        data["stats"] = self.object.get_core_stats(data["start_date"], data["end_date"])
+        data["stats"] = self.object.get_core_stats(
+            data["start_date"], data["end_date"], self.get_segment()
+        )
         data["RESULTS_LIMIT"] = RESULTS_LIMIT
-        data["object_list"] = Session.objects.filter(
+        recent_sessions = Session.objects.filter(
             service=self.get_object(),
             start_time__lt=self.get_end_date(),
             start_time__gt=self.get_start_date(),
-        ).order_by("-start_time")[:10]
+        ).order_by("-start_time")
+        if self.get_segment() == "humans":
+            recent_sessions = recent_sessions.filter(is_bot=False)
+        elif self.get_segment() == "bots":
+            recent_sessions = recent_sessions.filter(is_bot=True)
+        data["object_list"] = recent_sessions[:10]
         return data
 
 
@@ -118,7 +125,7 @@ class ServiceDeleteView(
 
 
 class ServiceSessionsListView(
-    LoginRequiredMixin, PermissionRequiredMixin, DateRangeMixin, ListView
+    LoginRequiredMixin, PermissionRequiredMixin, DateRangeMixin, SegmentMixin, ListView
 ):
     model = Session
     template_name = "dashboard/pages/service_session_list.html"
@@ -129,11 +136,16 @@ class ServiceSessionsListView(
         return get_object_or_404(Service, pk=self.kwargs.get("pk"))
 
     def get_queryset(self):
-        return Session.objects.filter(
+        sessions = Session.objects.filter(
             service=self.get_object(),
             start_time__lt=self.get_end_date(),
             start_time__gt=self.get_start_date(),
         ).order_by("-start_time")
+        if self.get_segment() == "humans":
+            sessions = sessions.filter(is_bot=False)
+        elif self.get_segment() == "bots":
+            sessions = sessions.filter(is_bot=True)
+        return sessions
 
     def get_context_data(self, **kwargs):
         data = super().get_context_data(**kwargs)

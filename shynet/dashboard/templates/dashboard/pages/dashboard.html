@@ -9,6 +9,9 @@
     </div>
     <div class="flex items-center">
         <div class="mr-1">
+            {% include 'dashboard/includes/segment_toggle.html' %}
+        </div>
+        <div class="mr-1">
             {% include 'dashboard/includes/date_range.html' %}
         </div>
         {% has_perm "core.create_service" user as can_create %}

@@ -3,6 +3,7 @@
 {% load i18n humanize helpers rules %}
 
 {% block service_actions %}
+<div class="mr-2">{% include 'dashboard/includes/segment_toggle.html' %}</div>
 <div class="mr-2">{% include 'dashboard/includes/date_range.html' %}</div>
 {% has_perm 'core.change_service' user object as can_update %}
 {% if can_update %}
@@ -97,6 +98,27 @@
     </article>
     {% endwith %}
 </div>
+<p class="text-sm text-gray-400 mb-4 -mt-2">
+    {% if stats.segment == 'humans' %}
+        {% trans 'Showing human traffic.' %}
+        {% blocktrans trimmed count counter=stats.bot_session_count with count=stats.bot_session_count|intcomma %}
+            {{ count }} bot session hidden in this range.
+        {% plural %}
+            {{ count }} bot sessions hidden in this range.
+        {% endblocktrans %}
+    {% elif stats.segment == 'bots' %}
+        {% trans 'Showing bot traffic.' %}
+        {% blocktrans trimmed count counter=stats.human_session_count with count=stats.human_session_count|intcomma %}
+            {{ count }} human session hidden in this range.
+        {% plural %}
+            {{ count }} human sessions hidden in this range.
+        {% endblocktrans %}
+    {% else %}
+        {% blocktrans trimmed with humans=stats.human_session_count|intcomma bots=stats.bot_session_count|intcomma %}
+            Showing all traffic: {{ humans }} human and {{ bots }} bot sessions.
+        {% endblocktrans %}
+    {% endif %}
+</p>
 <div class="card overflow-visible ~neutral !low py-0 mb-6">
     {% include 'dashboard/includes/time_chart.html' with data=stats.chart_data tooltip_format=stats.chart_tooltip_format granularity=stats.chart_granularity click_zoom=True %}
 </div>
@@ -322,6 +344,40 @@
                 {% empty %}
                 <tr>
                     <td><span class="text-gray-600">No data yet...</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card ~neutral !low limited-height py-2">
+        <table class="table">
+            <thead class="text-sm">
+                <tr>
+                    <th>{% trans 'Bot Reason' %}</th>
+                    <th class="rf">{% trans 'sessions' %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for reason in stats.bot_reasons %}
+                <tr>
+                    <td class="truncate w-full max-w-0 relative">
+                        {% include 'dashboard/includes/bar.html' with count=reason.count max=stats.bot_reasons.0.count total=stats.bot_session_count %}
+                        <div class="relative flex items-center">
+                            <span class="truncate">{{reason.bot_reason|default:"Unknown"}}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="flex justify-end items-center">
+                            {{reason.count|intcomma}}
+                            <span class="text-xs rf min-w-48">
+                                ({{reason.count|percent:stats.bot_session_count}})
+                            </span>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td><span class="text-gray-600">No bots detected in this range.</span></td>
                 </tr>
                 {% endfor %}
             </tbody>

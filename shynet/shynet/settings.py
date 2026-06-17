@@ -364,6 +364,14 @@ BLOCK_ALL_IPS = os.getenv("BLOCK_ALL_IPS", "False") == "True"
 # Include date and service ID in salt?
 AGGRESSIVE_HASH_SALTING = os.getenv("AGGRESSIVE_HASH_SALTING", "False") == "True"
 
+# Treat no-JS / pixel-only sessions as bots. The noscript tracking pixel only
+# fires for clients that don't execute JavaScript, which is a strong (but not
+# perfect) bot signal: it can also catch privacy-conscious humans. Off by
+# default; enable to be more aggressive about filtering non-human traffic.
+BOT_DETECTION_TREAT_PIXEL_AS_BOT = (
+    os.getenv("BOT_DETECTION_TREAT_PIXEL_AS_BOT", "False") == "True"
+)
+
 # What location url should be linked to in the frontend?
 LOCATION_URL = os.getenv(
     "LOCATION_URL", "https://www.openstreetmap.org/?mlat=$LATITUDE&mlon=$LONGITUDE"
