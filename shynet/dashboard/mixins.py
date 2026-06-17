@@ -97,3 +97,29 @@ class SegmentMixin:
         data["segment"] = self.get_segment()
         data["segment_options"] = self.get_segment_options()
         return data
+
+
+class EngagedMixin:
+    """Reads the ?engaged= toggle and exposes it.
+
+    "Engaged only" hides zero-duration bounce sessions (and most "Unknown"
+    noise) from every KPI, chart and breakdown. Defaults to OFF so existing
+    behaviour, the API and digests are unaffected; only views that mix this in
+    and explicitly pass ?engaged=true opt in. Composes orthogonally with the
+    bot/human SegmentMixin."""
+
+    def get_engaged(self):
+        return self.request.GET.get("engaged") == "true"
+
+    def get_engaged_options(self):
+        active = self.get_engaged()
+        return [
+            {"value": "true", "name": "Engaged", "active": active},
+            {"value": "", "name": "All sessions", "active": not active},
+        ]
+
+    def get_context_data(self, **kwargs):
+        data = super().get_context_data(**kwargs)
+        data["engaged"] = self.get_engaged()
+        data["engaged_options"] = self.get_engaged_options()
+        return data

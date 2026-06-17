@@ -5,12 +5,23 @@
 {% block head_title %}{{object.name}} {% trans 'Sessions' %}{% endblock %}
 
 {% block service_actions %}
-<div class="mr-2">{% include 'dashboard/includes/date_range.html' %}</div>
-<a href="{% contextual_url 'dashboard:service' object.uuid %}" class="button field ~neutral !low bg-neutral-000 w-auto">{% trans 'Analytics' %} &rarr;</a>
+<div class="mr-2 mb-2 md:mb-0">{% include 'dashboard/includes/segment_toggle.html' %}</div>
+<div class="mr-2 mb-2 md:mb-0">{% include 'dashboard/includes/engaged_toggle.html' %}</div>
+<div class="mr-2 mb-2 md:mb-0">{% include 'dashboard/includes/date_range.html' %}</div>
+<a href="{% contextual_url 'dashboard:service' object.uuid %}" class="seg__item">{% trans 'Analytics' %} &rarr;</a>
 {% endblock %}
 
 {% block service_content %}
-<div class="card ~neutral !low mb-8 pt-2 max-w-full overflow-x-auto">
+{% if identifier %}
+<div class="card mb-4 flex items-center justify-between flex-wrap" style="gap: 0.5rem">
+    <p>
+        {% trans 'Filtered to visitor' %}
+        <span class="chip ~neutral">{{ identifier }}</span>
+    </p>
+    <a href="{% contextual_url 'dashboard:service_session_list' object.uuid %}" class="seg__item">{% trans 'Clear filter' %} &times;</a>
+</div>
+{% endif %}
+<div class="card mb-8 pt-2 max-w-full overflow-x-auto">
     {% include 'dashboard/includes/session_list.html' %}
 </div>
 {% pagination page_obj request %}

@@ -2,7 +2,7 @@ from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.cache import cache
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Min, Max, F
 from django.shortcuts import get_object_or_404, reverse, redirect
 from django.views.generic import (
     CreateView,
@@ -18,10 +18,12 @@ from analytics.models import Session, Hit
 from core.models import Service, _default_api_token, RESULTS_LIMIT
 
 from .forms import ServiceForm
-from .mixins import DateRangeMixin, SegmentMixin
+from .mixins import DateRangeMixin, SegmentMixin, EngagedMixin
 
 
-class DashboardView(LoginRequiredMixin, DateRangeMixin, SegmentMixin, ListView):
+class DashboardView(
+    LoginRequiredMixin, DateRangeMixin, SegmentMixin, EngagedMixin, ListView
+):
     model = Service
     template_name = "dashboard/pages/dashboard.html"
     paginate_by = settings.DASHBOARD_PAGE_SIZE
@@ -36,7 +38,10 @@ class DashboardView(LoginRequiredMixin, DateRangeMixin, SegmentMixin, ListView):
 
         for service in data["object_list"]:
             service.stats = service.get_core_stats(
-                self.get_start_date(), self.get_end_date(), self.get_segment()
+                self.get_start_date(),
+                self.get_end_date(),
+                self.get_segment(),
+                self.get_engaged(),
             )
 
         return data
@@ -57,7 +62,12 @@ class ServiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
 
 
 class ServiceView(
-    LoginRequiredMixin, PermissionRequiredMixin, DateRangeMixin, SegmentMixin, DetailView
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    DateRangeMixin,
+    SegmentMixin,
+    EngagedMixin,
+    DetailView,
 ):
     model = Service
     template_name = "dashboard/pages/service.html"
@@ -67,7 +77,7 @@ class ServiceView(
         data = super().get_context_data(**kwargs)
         data["script_protocol"] = "https://" if settings.SCRIPT_USE_HTTPS else "http://"
         data["stats"] = self.object.get_core_stats(
-            data["start_date"], data["end_date"], self.get_segment()
+            data["start_date"], data["end_date"], self.get_segment(), self.get_engaged()
         )
         data["RESULTS_LIMIT"] = RESULTS_LIMIT
         recent_sessions = Session.objects.filter(
@@ -79,6 +89,10 @@ class ServiceView(
             recent_sessions = recent_sessions.filter(is_bot=False)
         elif self.get_segment() == "bots":
             recent_sessions = recent_sessions.filter(is_bot=True)
+        if self.get_engaged():
+            recent_sessions = recent_sessions.filter(
+                Q(is_bounce=False) | Q(last_seen__gt=F("start_time"))
+            )
         data["object_list"] = recent_sessions[:10]
         return data
 
@@ -125,7 +139,12 @@ class ServiceDeleteView(
 
 
 class ServiceSessionsListView(
-    LoginRequiredMixin, PermissionRequiredMixin, DateRangeMixin, SegmentMixin, ListView
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    DateRangeMixin,
+    SegmentMixin,
+    EngagedMixin,
+    ListView,
 ):
     model = Session
     template_name = "dashboard/pages/service_session_list.html"
@@ -134,6 +153,13 @@ class ServiceSessionsListView(
 
     def get_object(self):
         return get_object_or_404(Service, pk=self.kwargs.get("pk"))
+
+    def get_identifier(self):
+        """Optional ?identifier= deep-link filter (from Repeat visitors)."""
+        identifier = self.request.GET.get("identifier")
+        if identifier:
+            return identifier
+        return None
 
     def get_queryset(self):
         sessions = Session.objects.filter(
@@ -145,11 +171,18 @@ class ServiceSessionsListView(
             sessions = sessions.filter(is_bot=False)
         elif self.get_segment() == "bots":
             sessions = sessions.filter(is_bot=True)
+        if self.get_engaged():
+            sessions = sessions.filter(
+                Q(is_bounce=False) | Q(last_seen__gt=F("start_time"))
+            )
+        if self.get_identifier() is not None:
+            sessions = sessions.filter(identifier=self.get_identifier())
         return sessions
 
     def get_context_data(self, **kwargs):
         data = super().get_context_data(**kwargs)
         data["object"] = self.get_object()
+        data["identifier"] = self.get_identifier()
         return data
 
 
@@ -196,6 +229,107 @@ class ServiceSessionView(LoginRequiredMixin, PermissionRequiredMixin, DetailView
     def get_context_data(self, **kwargs):
         data = super().get_context_data(**kwargs)
         data["object"] = get_object_or_404(Service, pk=self.kwargs.get("pk"))
+
+        session = self.object
+        # Hit.Meta orders by -start_time; reverse for a chronological journey.
+        hits = list(session.hit_set.all().order_by("start_time"))
+        total = len(hits)
+        # Pre-compute the per-hit timeline data the drill-down template needs:
+        # 1-based step number, total step count and cumulative offset from the
+        # session start (a timedelta the naturaldelta filter can format).
+        timeline = []
+        for index, hit in enumerate(hits):
+            timeline.append(
+                {
+                    "hit": hit,
+                    "step": index + 1,
+                    "total": total,
+                    "cumulative": hit.start_time - session.start_time,
+                }
+            )
+        data["timeline"] = timeline
+        data["hit_total"] = total
+        return data
+
+
+class ServiceRepeatVisitorsView(
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    DateRangeMixin,
+    SegmentMixin,
+    EngagedMixin,
+    ListView,
+):
+    """Repeat visitors, honest about AGGRESSIVE_HASH_SALTING.
+
+    Primary (Section A): identifier-based grouping. This is the only truthful
+    cross-day answer, because session hashes are re-salted daily, so without an
+    explicit window.shynet.identifier cross-day identity is impossible.
+
+    Secondary (Section B): a same-day IP+UA fallback cluster, fenced behind a
+    warning. Rendered read-only aggregation, never as an identity. ip and
+    user_agent are PII and may be null when IP collection is disabled."""
+
+    model = Session
+    template_name = "dashboard/pages/service_repeat_visitors.html"
+    paginate_by = 50
+    permission_required = "core.view_service"
+
+    def get_object(self):
+        return get_object_or_404(Service, pk=self.kwargs.get("pk"))
+
+    def _base_sessions(self):
+        sessions = Session.objects.filter(
+            service=self.get_object(),
+            start_time__lt=self.get_end_date(),
+            start_time__gt=self.get_start_date(),
+        )
+        if self.get_segment() == "humans":
+            sessions = sessions.filter(is_bot=False)
+        elif self.get_segment() == "bots":
+            sessions = sessions.filter(is_bot=True)
+        if self.get_engaged():
+            sessions = sessions.filter(
+                Q(is_bounce=False) | Q(last_seen__gt=F("start_time"))
+            )
+        return sessions
+
+    def get_queryset(self):
+        # Section A: cross-day, identifier-based. The honest primary view.
+        return (
+            self._base_sessions()
+            .exclude(identifier="")
+            .filter(identifier__isnull=False)
+            .values("identifier")
+            .annotate(
+                count=Count("uuid"),
+                first_seen=Min("start_time"),
+                last_seen=Max("last_seen"),
+            )
+            .filter(count__gt=1)
+            .order_by("-count", "-last_seen")
+        )
+
+    def get_context_data(self, **kwargs):
+        data = super().get_context_data(**kwargs)
+        data["object"] = self.get_object()
+
+        # Section B: same-day best-effort IP+UA clusters. Read-only aggregation,
+        # never rendered as an identity. Excludes rows with no IP (IP collection
+        # disabled) since those cannot be meaningfully clustered.
+        ip_ua_clusters = (
+            self._base_sessions()
+            .filter(ip__isnull=False)
+            .values("ip", "user_agent")
+            .annotate(
+                count=Count("uuid"),
+                first_seen=Min("start_time"),
+                last_seen=Max("last_seen"),
+            )
+            .filter(count__gt=1)
+            .order_by("-count", "-last_seen")[:RESULTS_LIMIT]
+        )
+        data["ip_ua_clusters"] = ip_ua_clusters
         return data
 
 

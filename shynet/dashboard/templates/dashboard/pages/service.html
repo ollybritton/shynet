@@ -3,11 +3,12 @@
 {% load i18n humanize helpers rules %}
 
 {% block service_actions %}
-<div class="mr-2">{% include 'dashboard/includes/segment_toggle.html' %}</div>
-<div class="mr-2">{% include 'dashboard/includes/date_range.html' %}</div>
+<div class="mr-2 mb-2 md:mb-0">{% include 'dashboard/includes/segment_toggle.html' %}</div>
+<div class="mr-2 mb-2 md:mb-0">{% include 'dashboard/includes/engaged_toggle.html' %}</div>
+<div class="mr-2 mb-2 md:mb-0">{% include 'dashboard/includes/date_range.html' %}</div>
 {% has_perm 'core.change_service' user object as can_update %}
 {% if can_update %}
-<a href="{% contextual_url 'dashboard:service_update' service.uuid %}" class="button field !low bg-neutral-000 w-auto">{% trans 'Manage' %} &rarr;</a>
+<a href="{% contextual_url 'dashboard:service_update' service.uuid %}" class="seg__item">{% trans 'Manage' %} &rarr;</a>
 {% endif %}
 {% endblock %}
 
@@ -24,107 +25,89 @@
     {% include 'dashboard/includes/service_snippet.html' %}
 </div>
 {% else %}
-<div class="grid grid-cols-2 gap-6 md:flex justify-between mb-6 card ~neutral !high px-6" id="stats">
-    {% with classes="text-sm font-semibold" good_classes="text-positive-400" bad_classes="text-critical-400" neutral_classes="text-gray-400" %}
-    <article class="">
-        <p class="label text-gray-400">{% trans 'sessions' %}</p>
-        <p class="heading">
-            {{stats.session_count|intcomma}}
-        <div>
+{% comment %}
+Pre-build the querystrings used by the reversible noise-disclosure links, so
+each "hidden category" can be turned off without touching the others.
+{% endcomment %}
+<div class="card mb-2" id="stats">
+    <div class="kpi-row">
+        {% with classes="text-sm font-semibold" good_classes="text-positive-400" bad_classes="text-critical-400" neutral_classes="text-gray-400" %}
+        <div class="kpi-cell">
+            <p class="supra">{% trans 'Sessions' %}</p>
+            <p class="kpi-cell__num">
+                <a href="{% contextual_url 'dashboard:service_session_list' service.uuid %}">{{stats.session_count|intcomma}}</a>
+            </p>
             {% compare stats.compare.session_count stats.session_count "UP" classes=classes good_classes=good_classes bad_classes=bad_classes neutral_classes=neutral_classes %}
         </div>
-        </p>
-    </article>
-    <article class="">
-        <p class="label text-gray-400">{% trans 'Hits' %}</p>
-        <p class="heading">
-            {{stats.hit_count|intcomma}}
-        <div>
+        <div class="kpi-cell">
+            <p class="supra">{% trans 'Hits' %}</p>
+            <p class="kpi-cell__num">
+                <a href="{% contextual_url 'dashboard:service_session_list' service.uuid %}">{{stats.hit_count|intcomma}}</a>
+            </p>
             {% compare stats.compare.hit_count stats.hit_count "UP" classes=classes good_classes=good_classes bad_classes=bad_classes neutral_classes=neutral_classes %}
         </div>
-        </p>
-    </article>
-    <article class="">
-        <p class="label text-gray-400">{% trans 'Load Time' %}</p>
-        <p class="heading">
-            {% if stats.avg_load_time %}
-            {{stats.avg_load_time|floatformat:"0"}}ms
-            {% else %}
-            ?
-            {% endif %}
-        <div>
+        <div class="kpi-cell">
+            <p class="supra">{% trans 'Load Time' %}</p>
+            <p class="kpi-cell__num">
+                {% if stats.avg_load_time %}{{stats.avg_load_time|floatformat:"0"}}ms{% else %}<span class="is-unknown">?</span>{% endif %}
+            </p>
             {% compare stats.compare.avg_load_time stats.avg_load_time "DOWN" classes=classes good_classes=good_classes bad_classes=bad_classes neutral_classes=neutral_classes %}
         </div>
-        </p>
-    </article>
-    <article class="">
-        <p class="label text-gray-400">{% trans 'Bounce Rate' %}</p>
-        <p class="heading">
-            {% if stats.bounce_rate_pct %}
-            {{stats.bounce_rate_pct|floatformat:"-1"}}%
-            {% else %}
-            ?
-            {% endif %}
-        <div>
+        <div class="kpi-cell">
+            <p class="supra">{% trans 'Bounce Rate' %}{% if engaged %} <span class="is-unknown" style="font-size:0.65rem">({% trans 'engaged' %})</span>{% endif %}</p>
+            <p class="kpi-cell__num">
+                {% if stats.bounce_rate_pct != None %}{{stats.bounce_rate_pct|floatformat:"-1"}}%{% else %}<span class="is-unknown">?</span>{% endif %}
+            </p>
             {% compare stats.compare.bounce_rate_pct stats.bounce_rate_pct "DOWN" classes=classes good_classes=good_classes bad_classes=bad_classes neutral_classes=neutral_classes %}
         </div>
-        </p>
-    </article>
-    <article class="">
-        <p class="label text-gray-400">{% trans 'Duration' %}</p>
-        <p class="heading">
-            {% if stats.avg_session_duration %}
-            {{stats.avg_session_duration|naturaldelta}}
-            {% else %}
-            ?
-            {% endif %}
-        <div>
+        <div class="kpi-cell">
+            <p class="supra">{% trans 'Duration' %}</p>
+            <p class="kpi-cell__num">
+                {% if stats.avg_session_duration %}{{stats.avg_session_duration|naturaldelta}}{% else %}<span class="is-unknown">?</span>{% endif %}
+            </p>
             {% compare stats.compare.avg_session_duration stats.avg_session_duration "UP" classes=classes good_classes=good_classes bad_classes=bad_classes neutral_classes=neutral_classes %}
         </div>
-        </p>
-    </article>
-    <article class="">
-        <p class="label text-gray-400">{% trans 'Hits/Session' %}</p>
-        <p class="heading">
-            {% if stats.avg_hits_per_session %}
-            {{stats.avg_hits_per_session|floatformat:"-1"}}
-            {% else %}
-            ?
-            {% endif %}
-        <div>
+        <div class="kpi-cell">
+            <p class="supra">{% trans 'Hits/Session' %}</p>
+            <p class="kpi-cell__num">
+                {% if stats.avg_hits_per_session %}{{stats.avg_hits_per_session|floatformat:"-1"}}{% else %}<span class="is-unknown">?</span>{% endif %}
+            </p>
             {% compare stats.compare.avg_hits_per_session stats.avg_hits_per_session "UP" classes=classes good_classes=good_classes bad_classes=bad_classes neutral_classes=neutral_classes %}
         </div>
-        </p>
-    </article>
-    {% endwith %}
+        {% endwith %}
+    </div>
 </div>
-<p class="text-sm text-gray-400 mb-4 -mt-2">
-    {% if stats.segment == 'humans' %}
-        {% trans 'Showing human traffic.' %}
-        {% blocktrans trimmed with formatted=stats.bot_session_count|intcomma count counter=stats.bot_session_count %}
-            {{ formatted }} bot session hidden in this range.
-        {% plural %}
-            {{ formatted }} bot sessions hidden in this range.
-        {% endblocktrans %}
-    {% elif stats.segment == 'bots' %}
-        {% trans 'Showing bot traffic.' %}
-        {% blocktrans trimmed with formatted=stats.human_session_count|intcomma count counter=stats.human_session_count %}
-            {{ formatted }} human session hidden in this range.
-        {% plural %}
-            {{ formatted }} human sessions hidden in this range.
-        {% endblocktrans %}
-    {% else %}
-        {% blocktrans trimmed with humans=stats.human_session_count|intcomma bots=stats.bot_session_count|intcomma %}
-            Showing all traffic: {{ humans }} human and {{ bots }} bot sessions.
-        {% endblocktrans %}
+
+{% comment %}
+Noise-disclosure line. States exactly what the active filters hid. Each hidden
+category is a server-rendered link that turns that one filter off (no JS, no
+data loss). The querystrings are built to preserve the other active filters.
+{% endcomment %}
+<p class="noise-line mb-4">
+    {% if engaged %}{% trans 'Showing engaged' %}{% else %}{% trans 'Showing' %}{% endif %}
+    {% if stats.segment == 'humans' %}{% trans 'human' %}{% elif stats.segment == 'bots' %}{% trans 'bot' %}{% else %}{% trans 'all' %}{% endif %}
+    {% trans 'sessions.' %}
+    {% trans 'Hidden:' %}
+    {# Engaged-hidden 0:00 sessions (reversible: drop engaged) #}
+    {% if engaged %}
+    <a href="?{% if stats.segment %}segment={{ stats.segment }}&{% endif %}{% if start_date %}startDate={{ start_date|date:'Y-m-d' }}&{% endif %}{% if end_date %}endDate={{ end_date|date:'Y-m-d' }}{% endif %}">{{ stats.engaged_hidden_count|intcomma }} 0:00 {% trans 'bounces' %}</a>{% if stats.segment != 'all' %},{% endif %}
     {% endif %}
+    {# Segment-hidden bot or human sessions (reversible: segment=all) #}
+    {% if stats.segment == 'humans' %}
+    <a href="?segment=all{% if engaged %}&engaged=true{% endif %}{% if start_date %}&startDate={{ start_date|date:'Y-m-d' }}{% endif %}{% if end_date %}&endDate={{ end_date|date:'Y-m-d' }}{% endif %}">{{ stats.bot_session_count|intcomma }} {% trans 'bot sessions' %}</a>
+    {% elif stats.segment == 'bots' %}
+    <a href="?segment=all{% if engaged %}&engaged=true{% endif %}{% if start_date %}&startDate={{ start_date|date:'Y-m-d' }}{% endif %}{% if end_date %}&endDate={{ end_date|date:'Y-m-d' }}{% endif %}">{{ stats.human_session_count|intcomma }} {% trans 'human sessions' %}</a>
+    {% endif %}
+    {% if not engaged and stats.segment == 'all' %}<span class="is-unknown">{% trans 'nothing' %}</span>.{% else %}.{% endif %}
 </p>
-<div class="card overflow-visible ~neutral !low py-0 mb-6">
+
+<div class="card overflow-visible py-2 mb-6">
     {% include 'dashboard/includes/time_chart.html' with data=stats.chart_data tooltip_format=stats.chart_tooltip_format granularity=stats.chart_granularity click_zoom=True %}
 </div>
 {% endif %}
 <div id="card-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-    <div class="card ~neutral !low limited-height py-2">
+    <div class="card limited-height py-2">
+        <p class="supra p-2">{% trans 'Locations' %}</p>
         <table class="table">
             <thead class="text-sm">
                 <tr>
@@ -138,7 +121,7 @@
                     <td class="truncate w-full max-w-0 relative">
                         {% include 'dashboard/includes/bar.html' with count=location.count max=stats.locations.0.count total=stats.hit_count %}
                         <div class="relative flex items-center">
-                            {{location.location|default:"Unknown"|urldisplay}}
+                            {% if location.location %}{{location.location|urldisplay}}{% else %}<span class="is-unknown">{% trans 'Unknown' %}</span>{% endif %}
                         </div>
                     </td>
                     <td>
@@ -152,38 +135,34 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td><span class="text-gray-600">{% trans 'No data yet...' %}</span></td>
+                    <td><span class="is-unknown">{% trans 'No data yet...' %}</span></td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
         {% if stats.locations.count == RESULTS_LIMIT %}
             <hr class="sep h-8 md:h-12">
-            <a href="{% contextual_url 'dashboard:service_location_list' service.uuid %}" class="button ~neutral w-auto mb-2">
+            <a href="{% contextual_url 'dashboard:service_location_list' service.uuid %}" class="seg__item">
                 {% trans 'View more locations' %} &rarr;
             </a>
         {% endif %}
     </div>
-    <div class="geo-map card ~neutral !low py-2 overflow-y-hidden">
-        <p class="text-sm font-semibold p-2 border-b mb-2" style="color: var(--color-title)">
-            {% trans 'Sessions by Geography' %} &nbsp
-            <button onclick="document.getElementById('card-grid').classList.add('geo-card--use-table-view')" class="text-xs select-none p-0 button ~urge !low">
-                ({% trans 'view table' %})
-            </button>
-        </p>
+    <div class="geo-map card py-2 overflow-y-hidden">
+        <div class="flex items-center justify-between p-2 border-b mb-2">
+            <p class="supra">{% trans 'Sessions by Geography' %}</p>
+            <div class="seg" role="group" aria-label="{% trans 'Map or table view' %}">
+                <button type="button" onclick="document.getElementById('card-grid').classList.remove('geo-card--use-table-view'); geoMap.resize()" class="seg__item is-active" title="{% trans 'Map view' %}" aria-label="{% trans 'Map view' %}"><i class="ti ti-map"></i></button>
+                <button type="button" onclick="document.getElementById('card-grid').classList.add('geo-card--use-table-view')" class="seg__item" title="{% trans 'Table view' %}" aria-label="{% trans 'Table view' %}"><i class="ti ti-table"></i></button>
+            </div>
+        </div>
         {% include 'dashboard/includes/map_chart.html' with countries=stats.countries %}
     </div>
-    <div class="geo-table card ~neutral !low limited-height py-2">
+    <div class="geo-table card limited-height py-2">
         <table class="table">
             <thead class="text-sm">
                 <tr>
-                    <th>
-                        {% trans 'Country' %} &nbsp
-                        <button onclick="document.getElementById('card-grid').classList.remove('geo-card--use-table-view'); geoMap.resize()" class="text-xs select-none p-0 button ~urge !low">
-                            (view map)
-                        </button>
-                    </th>
-                    <th class="rf">{% trans 'sessions' %}</th>
+                    <th>{% trans 'Country' %}</th>
+                    <th class="rf">{% trans 'Sessions' %}</th>
                 </tr>
             </thead>
             <tbody>
@@ -192,7 +171,7 @@
                     <td class="truncate w-full max-w-0 relative" title="{{country.country|country_name}}">
                         {% include 'dashboard/includes/bar.html' with count=country.count max=stats.countries.0.count total=stats.session_count %}
                         <div class="relative flex items-center">
-                            <span class="flex-none {{country.country|flag_class}}"></span> <span class="truncate">{{country.country|country_name}}</span>
+                            <span class="flex-none {{country.country|flag_class}}"></span> <span class="truncate">{% if country.country %}{{country.country|country_name}}{% else %}<span class="is-unknown">{% trans 'Unknown' %}</span>{% endif %}</span>
                         </div>
                     </td>
                     <td>
@@ -206,18 +185,19 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td><span class="text-gray-600">No data yet...</span></td>
+                    <td><span class="is-unknown">{% trans 'No data yet...' %}</span></td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    <div class="card ~neutral !low limited-height py-2">
+    <div class="card limited-height py-2">
+        <p class="supra p-2">{% trans 'Referrers' %}</p>
         <table class="table">
             <thead class="text-sm">
                 <tr>
                     <th>{% trans 'Referrer' %}</th>
-                    <th class="rf">{% trans 'sessions' %}</th>
+                    <th class="rf">{% trans 'Sessions' %}</th>
                 </tr>
             </thead>
             <tbody>
@@ -226,7 +206,7 @@
                     <td class="truncate w-full max-w-0 relative">
                         {% include 'dashboard/includes/bar.html' with count=referrer.count max=stats.referrers.0.count total=stats.session_count %}
                         <div class="relative flex items-center">
-                            {{referrer.referrer|default:"Direct"|urldisplay}}
+                            {% if referrer.referrer %}{{referrer.referrer|urldisplay}}{% else %}<span class="is-unknown">{% trans 'Direct' %}</span>{% endif %}
                         </div>
                     </td>
                     <td>
@@ -240,18 +220,19 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td><span class="text-gray-600">No data yet...</span></td>
+                    <td><span class="is-unknown">{% trans 'No data yet...' %}</span></td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    <div class="card ~neutral !low limited-height py-2">
+    <div class="card limited-height py-2">
+        <p class="supra p-2">{% trans 'Operating System' %}</p>
         <table class="table">
             <thead class="text-sm">
                 <tr>
                     <th>{% trans 'Operating System' %}</th>
-                    <th class="rf">{% trans 'sessions' %}</th>
+                    <th class="rf">{% trans 'Sessions' %}</th>
                 </tr>
             </thead>
             <tbody>
@@ -260,7 +241,7 @@
                     <td class="flex items-center truncate w-full max-w-0 relative" title="{{os.os|default:'Unknown'}}">
                         {% include 'dashboard/includes/bar.html' with count=os.count max=stats.operating_systems.0.count total=stats.session_count %}
                         <div class="relative flex items-center">
-                            {{os.os|iconify}}<span class="truncate">{{os.os|default:"Unknown"}}</span>
+                            {{os.os|iconify}}{% if os.os %}<span class="truncate">{{os.os}}</span>{% else %}<span class="truncate is-unknown">{% trans 'Unknown' %}</span>{% endif %}
                         </div>
                     </td>
                     <td>
@@ -274,18 +255,19 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td><span class="text-gray-600">No data yet...</span></td>
+                    <td><span class="is-unknown">{% trans 'No data yet...' %}</span></td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    <div class="card ~neutral !low limited-height py-2">
+    <div class="card limited-height py-2">
+        <p class="supra p-2">{% trans 'Browser' %}</p>
         <table class="table">
             <thead class="text-sm">
                 <tr>
                     <th>{% trans 'Browser' %}</th>
-                    <th class="rf">{% trans 'sessions' %}</th>
+                    <th class="rf">{% trans 'Sessions' %}</th>
                 </tr>
             </thead>
             <tbody>
@@ -293,9 +275,8 @@
                 <tr>
                     <td class="flex items-center truncate w-full max-w-0 relative" title="{{browser.browser|default:'Unknown'}}">
                         {% include 'dashboard/includes/bar.html' with count=browser.count max=stats.browsers.0.count total=stats.session_count %}
-                        </div>
                         <div class="relative flex items-center">
-                            {{browser.browser|iconify}}<span class="truncate">{{browser.browser|default:"Unknown"}}</span>
+                            {{browser.browser|iconify}}{% if browser.browser %}<span class="truncate">{{browser.browser}}</span>{% else %}<span class="truncate is-unknown">{% trans 'Unknown' %}</span>{% endif %}
                         </div>
                     </td>
                     <td>
@@ -309,18 +290,19 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td><span class="text-gray-600">No data yet...</span></td>
+                    <td><span class="is-unknown">{% trans 'No data yet...' %}</span></td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    <div class="card ~neutral !low limited-height py-2">
+    <div class="card limited-height py-2">
+        <p class="supra p-2">{% trans 'Device Type' %}</p>
         <table class="table">
             <thead class="text-sm">
                 <tr>
                     <th>{% trans 'Device Type' %}</th>
-                    <th class="rf">{% trans 'sessions' %}</th>
+                    <th class="rf">{% trans 'Sessions' %}</th>
                 </tr>
             </thead>
             <tbody>
@@ -329,7 +311,7 @@
                     <td class="truncate w-full max-w-0 relative">
                         {% include 'dashboard/includes/bar.html' with count=device_type.count max=stats.device_types.0.count total=stats.session_count %}
                         <div class="relative flex items-center">
-                            <span class="truncate">{{device_type.device_type|default:"Unknown"|title}}</span>
+                            {% if device_type.device_type %}<span class="truncate">{{device_type.device_type|title}}</span>{% else %}<span class="truncate is-unknown">{% trans 'Unknown' %}</span>{% endif %}
                         </div>
                     </td>
                     <td>
@@ -343,18 +325,19 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td><span class="text-gray-600">No data yet...</span></td>
+                    <td><span class="is-unknown">{% trans 'No data yet...' %}</span></td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    <div class="card ~neutral !low limited-height py-2">
+    <div class="card limited-height py-2">
+        <p class="supra p-2">{% trans 'Bot Reason' %}</p>
         <table class="table">
             <thead class="text-sm">
                 <tr>
                     <th>{% trans 'Bot Reason' %}</th>
-                    <th class="rf">{% trans 'sessions' %}</th>
+                    <th class="rf">{% trans 'Sessions' %}</th>
                 </tr>
             </thead>
             <tbody>
@@ -363,7 +346,7 @@
                     <td class="truncate w-full max-w-0 relative">
                         {% include 'dashboard/includes/bar.html' with count=reason.count max=stats.bot_reasons.0.count total=stats.bot_session_count %}
                         <div class="relative flex items-center">
-                            <span class="truncate">{{reason.bot_reason|default:"Unknown"}}</span>
+                            {% if reason.bot_reason %}<span class="truncate">{{reason.bot_reason}}</span>{% else %}<span class="truncate is-unknown">{% trans 'Unknown' %}</span>{% endif %}
                         </div>
                     </td>
                     <td>
@@ -377,18 +360,24 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td><span class="text-gray-600">No bots detected in this range.</span></td>
+                    <td><span class="is-unknown">{% trans 'No bots detected in this range.' %}</span></td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
-<div class="card ~neutral !low py-2 overflow-auto">
+<div class="card py-2 overflow-auto">
+    <p class="supra p-2">{% trans 'Recent sessions' %}</p>
     {% include 'dashboard/includes/session_list.html' %}
-    <hr class="sep h-8 md:h-12">
-    <a href="{% contextual_url 'dashboard:service_session_list' service.uuid %}" class="button ~neutral w-auto mb-2">
-        {% trans 'View more sessions' %} &rarr;
-    </a>
+    <hr class="sep h-6">
+    <div class="flex items-center flex-wrap" style="gap: 0.75rem">
+        <a href="{% contextual_url 'dashboard:service_session_list' service.uuid %}" class="seg__item">
+            {% trans 'View all sessions' %} &rarr;
+        </a>
+        <a href="{% contextual_url 'dashboard:service_repeat_visitors' service.uuid %}" class="seg__item">
+            <i class="ti ti-repeat"></i>{% trans 'Repeat visitors' %} &rarr;
+        </a>
+    </div>
 </div>
 {% endblock %}

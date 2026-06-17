@@ -4,18 +4,19 @@
     <input type="hidden" name="startDate" value="{{start_date.isoformat}}" id="startDate">
     <input type="hidden" name="endDate" value="{{end_date.isoformat}}" id="endDate">
     {% if segment %}<input type="hidden" name="segment" value="{{segment}}">{% endif %}
+    {% if engaged %}<input type="hidden" name="engaged" value="true">{% endif %}
 </form>
-<input type="input" id="rangePicker" placeholder="Date range" class="input ~neutral !low bg-neutral-000 cursor-pointer" style="max-width: 200px;" readonly>
+<input type="input" id="rangePicker" placeholder="Date range" class="seg__item cursor-pointer" style="max-width: 200px; height: auto;" readonly>
 <style>
     :root {
-        --litepicker-button-prev-month-color-hover: var(--color-urge);
-        --litepicker-button-next-month-color-hover: var(--color-urge);
-        --litepicker-day-color-hover: var(--color-urge);
-        --litepicker-is-today-color: var(--color-urge);
-        --litepicker-is-in-range-color: var(--color-urge-normal-fill);
-        --litepicker-is-start-color-bg: var(--color-urge);
-        --litepicker-is-end-color-bg: var(--color-urge);
-        --litepicker-button-apply-color-bg: var(--color-urge);
+        --litepicker-button-prev-month-color-hover: var(--global-theme-color);
+        --litepicker-button-next-month-color-hover: var(--global-theme-color);
+        --litepicker-day-color-hover: var(--global-theme-color);
+        --litepicker-is-today-color: var(--global-theme-color);
+        --litepicker-is-in-range-color: var(--bar-fill);
+        --litepicker-is-start-color-bg: var(--global-theme-color);
+        --litepicker-is-end-color-bg: var(--global-theme-color);
+        --litepicker-button-apply-color-bg: var(--global-theme-color);
     }
 
     .litepicker .container__predefined-ranges, .litepicker .container__months {

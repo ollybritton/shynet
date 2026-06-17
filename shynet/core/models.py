@@ -135,21 +135,23 @@ class Service(models.Model):
             start_time=timezone.now() - timezone.timedelta(days=1), segment=segment
         )
 
-    def get_core_stats(self, start_time=None, end_time=None, segment="all"):
+    def get_core_stats(
+        self, start_time=None, end_time=None, segment="all", engaged=None
+    ):
         if start_time is None:
             start_time = timezone.now() - timezone.timedelta(days=30)
         if end_time is None:
             end_time = timezone.now()
 
-        main_data = self.get_relative_stats(start_time, end_time, segment)
+        main_data = self.get_relative_stats(start_time, end_time, segment, engaged)
         comparison_data = self.get_relative_stats(
-            start_time - (end_time - start_time), start_time, segment
+            start_time - (end_time - start_time), start_time, segment, engaged
         )
         main_data["compare"] = comparison_data
 
         return main_data
 
-    def get_relative_stats(self, start_time, end_time, segment="all"):
+    def get_relative_stats(self, start_time, end_time, segment="all", engaged=None):
         Session = apps.get_model("analytics", "Session")
         Hit = apps.get_model("analytics", "Hit")
 
@@ -185,6 +187,25 @@ class Service(models.Model):
         )
 
         sessions = by_segment(sessions_in_range).order_by("-start_time")
+
+        # "Engaged only" filter: drop zero-duration bounces so every KPI,
+        # chart and breakdown sheds 0:00 noise consistently. Belt-and-braces:
+        # is_bounce can be stale (recalculate_bounce in tasks.py), so also keep
+        # any session whose last_seen is strictly after start_time. Applied here,
+        # at the single aggregation point, after segmentation so it composes
+        # orthogonally with the All/Humans/Bots toggle.
+        engaged_filter = models.Q(is_bounce=False) | models.Q(
+            last_seen__gt=models.F("start_time")
+        )
+        # How many sessions (within the active segment + date range) the engaged
+        # filter hides. Computed unconditionally so the UI can state "Hidden: N
+        # 0:00 sessions" even before the filter is turned on.
+        segmented_sessions_in_range = by_segment(sessions_in_range)
+        engaged_hidden_count = segmented_sessions_in_range.exclude(
+            engaged_filter
+        ).count()
+        if engaged:
+            sessions = sessions.filter(engaged_filter)
         session_count = sessions.count()
 
         hits = by_segment(
@@ -193,6 +214,14 @@ class Service(models.Model):
             ),
             field="session__is_bot",
         )
+        if engaged:
+            # Derive hits from the engaged sessions so hit-based breakdowns
+            # (locations, referrers, load time, chart) stay consistent with the
+            # session-based ones.
+            hits = hits.filter(
+                models.Q(session__is_bounce=False)
+                | models.Q(session__last_seen__gt=models.F("session__start_time"))
+            )
         hit_count = hits.count()
 
         has_hits = Hit.objects.filter(service=self).exists()
@@ -266,6 +295,8 @@ class Service(models.Model):
             "hit_count": hit_count,
             "has_hits": has_hits,
             "segment": segment,
+            "engaged": bool(engaged),
+            "engaged_hidden_count": engaged_hidden_count,
             "human_session_count": human_session_count,
             "bot_session_count": bot_session_count,
             "bot_reasons": bot_reasons,

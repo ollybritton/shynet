@@ -1,0 +1,99 @@
+{% extends "dashboard/service_base.html" %}
+
+{% load i18n a17t_tags pagination humanize helpers %}
+
+{% block head_title %}{{object.name}} {% trans 'Repeat visitors' %}{% endblock %}
+
+{% block service_actions %}
+<div class="mr-2 mb-2 md:mb-0">{% include 'dashboard/includes/segment_toggle.html' %}</div>
+<div class="mr-2 mb-2 md:mb-0">{% include 'dashboard/includes/engaged_toggle.html' %}</div>
+<div class="mr-2 mb-2 md:mb-0">{% include 'dashboard/includes/date_range.html' %}</div>
+<a href="{% contextual_url 'dashboard:service' object.uuid %}" class="seg__item">{% trans 'Analytics' %} &rarr;</a>
+{% endblock %}
+
+{% block service_content %}
+{% comment %}
+Shared querystring suffix carrying the active lens (segment/engaged/date) onto
+the identifier deep-links. identifier itself is appended per-row and is NOT a
+sticky CONTEXT_PARAM, so it only rides links built here.
+{% endcomment %}
+<div class="caveat mb-6">
+    <p>
+        {% blocktrans trimmed %}
+            Cross-day repeat visitors are only tracked when your site sets
+            <code>window.shynet.identifier</code>. Session hashes are re-salted
+            daily for privacy, so without an identifier only same-day repeats
+            (by IP + user agent) can be shown.
+        {% endblocktrans %}
+    </p>
+</div>
+
+<section class="mb-8">
+    <h4 class="heading text-xl mb-1"><i class="ti ti-user mr-1"></i>{% trans 'Returning visitors (by identifier)' %}</h4>
+    <p class="noise-line mb-3">{% trans 'The honest cross-day answer: visitors grouped by the identifier your site provides.' %}</p>
+
+    <div class="card py-2">
+        {% for row in object_list %}
+        <a class="srow" style="text-decoration:none; color:inherit"
+           href="{% url 'dashboard:service_session_list' object.uuid %}?identifier={{ row.identifier|urlencode }}{% if segment %}&segment={{ segment }}{% endif %}{% if engaged %}&engaged=true{% endif %}{% if start_date %}&startDate={{ start_date|date:'Y-m-d' }}{% endif %}{% if end_date %}&endDate={{ end_date|date:'Y-m-d' }}{% endif %}">
+            <div class="srow__main">
+                <div class="flex items-center" style="gap: 0.5rem; flex-wrap: wrap">
+                    <span class="chip ~neutral">{{ row.identifier }}</span>
+                    <span class="pill pill--count"><i class="ti ti-repeat"></i>{% blocktrans count counter=row.count with n=row.count|intcomma %}{{ n }} visit{% plural %}{{ n }} visits{% endblocktrans %}</span>
+                </div>
+                <div class="flex items-center mt-1" style="gap: 1.5rem; font-size: 0.85rem; color: var(--global-text-color-light)">
+                    <span>{% trans 'First seen' %}: {{ row.first_seen|date:"DATETIME_FORMAT" }}</span>
+                    <span>{% trans 'Last seen' %}: {{ row.last_seen|date:"DATETIME_FORMAT" }}</span>
+                </div>
+            </div>
+            <div class="srow__meta">
+                <span class="seg__item">{% trans 'View sessions' %} &rarr;</span>
+            </div>
+        </a>
+        {% empty %}
+        <div class="p-4">
+            <p class="mb-3 is-unknown">{% trans 'No cross-day repeat visitors found. If your site does not set an identifier, this is expected (see the note above).' %}</p>
+            <p class="mb-2 text-sm">{% trans 'To enable cross-day tracking, set an identifier before the tracking script loads:' %}</p>
+            <div class="card font-mono text-sm whitespace-pre-wrap break-all">{% filter force_escape %}<script>
+  window.shynet = window.shynet || {};
+  window.shynet.identifier = "your-stable-user-id";
+</script>{% endfilter %}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% if page_obj %}
+    {% pagination page_obj request %}
+    {% endif %}
+</section>
+
+<section>
+    <h4 class="heading text-xl mb-1"><i class="ti ti-users mr-1"></i>{% trans 'Same-day repeats (best-effort)' %}</h4>
+    <p class="noise-line mb-3">{% trans 'Inferred clusters of same-day sessions sharing an IP and user agent. Read-only and approximate; not a stable identity.' %}</p>
+
+    <div class="card py-2">
+        {% for cluster in ip_ua_clusters %}
+        <div class="srow">
+            <div class="srow__main">
+                <div class="flex items-center" style="gap: 0.5rem; flex-wrap: wrap">
+                    <span class="mono text-sm">{{ cluster.ip }}</span>
+                    <span class="pill pill--count">{% blocktrans count counter=cluster.count with n=cluster.count|intcomma %}{{ n }} session{% plural %}{{ n }} sessions{% endblocktrans %}</span>
+                </div>
+                <p class="mt-1 truncate is-unknown" style="font-size: 0.8rem" title="{{ cluster.user_agent }}">{{ cluster.user_agent }}</p>
+            </div>
+            <div class="srow__meta">
+                <div>
+                    <span class="srow__label">{% trans 'First seen' %}</span>
+                    <span class="srow__num" style="font-size:0.85rem">{{ cluster.first_seen|date:"M j, g:i a" }}</span>
+                </div>
+                <div>
+                    <span class="srow__label">{% trans 'Last seen' %}</span>
+                    <span class="srow__num" style="font-size:0.85rem">{{ cluster.last_seen|date:"M j, g:i a" }}</span>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <p class="is-unknown p-4">{% trans 'No same-day repeat clusters found in this range (or IP collection is disabled).' %}</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

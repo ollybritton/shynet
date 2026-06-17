@@ -7,16 +7,13 @@
     <div class="flex-1 truncate display-none md:display-block mr-4 md:mb-0 mb-4" title="{{request.site.name|default:"Dashboard"}}">
         <h4 class="heading truncate">{{request.site.name|default:"Dashboard"}}</h4>
     </div>
-    <div class="flex items-center">
-        <div class="mr-1">
-            {% include 'dashboard/includes/segment_toggle.html' %}
-        </div>
-        <div class="mr-1">
-            {% include 'dashboard/includes/date_range.html' %}
-        </div>
+    <div class="flex items-center flex-wrap" style="gap: 0.5rem">
+        {% include 'dashboard/includes/segment_toggle.html' %}
+        {% include 'dashboard/includes/engaged_toggle.html' %}
+        {% include 'dashboard/includes/date_range.html' %}
         {% has_perm "core.create_service" user as can_create %}
         {% if can_create %}
-        <a href="{% url 'dashboard:service_create' %}" class="button field !low bg-neutral-000 w-auto">+ {% trans 'New Service' %}</a>
+        <a href="{% url 'dashboard:service_create' %}" class="seg__item">+ {% trans 'New Service' %}</a>
         {% endif %}
     </div>
 </div>

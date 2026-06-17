@@ -1,10 +1,10 @@
 {% load i18n humanize helpers %}
 
-<a class="card chart-card overflow-visible ~neutral !low service mb-6 p-0" href="{% contextual_url 'dashboard:service' object.uuid %}">
+<a class="card chart-card overflow-visible service mb-6 p-0" href="{% contextual_url 'dashboard:service' object.uuid %}">
     {% with stats=object.stats %}
     <div class="p-4 md:flex justify-between overflow-none">
         <div class="flex items-center mb-4 md:mb-0 md:flex-1 md:min-w-0 truncate pr-0 md:pr-2">
-            <h3 class="heading text-xl md:text-2xl mr-2 mb-1 text-urge-600 flex items-center truncate" title="{{object.name}}">
+            <h3 class="heading text-xl md:text-2xl mr-2 mb-1 flex items-center truncate" style="color: var(--global-theme-color)" title="{{object.name}}">
                 {{object.link|iconify}}
                 <span class="truncate">{{object.name}}</span>
             </h3>
@@ -12,44 +12,44 @@
         </div>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-3 lg:gap-6 md:flex-none">
             <div>
-                <p>{% trans 'Sessions' %}</p>
-                <p class="label">
+                <p class="supra">{% trans 'Sessions' %}</p>
+                <p class="mono">
                     {{stats.session_count|intcomma}}
                     {% compare stats.compare.session_count stats.session_count "UP" %}
                 </p>
             </div>
             <div>
-                <p>{% trans 'Hits' %}</p>
-                <p class="label">
+                <p class="supra">{% trans 'Hits' %}</p>
+                <p class="mono">
                     {{stats.hit_count|intcomma}}
                     {% compare stats.compare.hit_count stats.hit_count "UP" %}
                 </p>
             </div>
             <div>
-                <p>{% trans 'Bounce Rate' %}</p>
-                <p class="label">
+                <p class="supra">{% trans 'Bounce Rate' %}</p>
+                <p class="mono">
                     {% if stats.bounce_rate_pct != None %}
                     {{stats.bounce_rate_pct|floatformat:"-1"}}%
                     {% else %}
-                    ?
+                    <span class="is-unknown">?</span>
                     {% endif %}
                     {% compare stats.compare.bounce_rate_pct stats.bounce_rate_pct "DOWN" %}
                 </p>
             </div>
             <div>
-                <p>{% trans 'Avg. Duration' %}</p>
-                <p class="label">
+                <p class="supra">{% trans 'Avg. Duration' %}</p>
+                <p class="mono">
                     {% if stats.avg_session_duration != None %}
                     {{stats.avg_session_duration|naturaldelta}}
                     {% else %}
-                    ?
+                    <span class="is-unknown">?</span>
                     {% endif %}
                     {% compare stats.compare.avg_session_duration stats.avg_session_duration "UP" %}
                 </p>
             </div>
         </div>
     </div>
-    <hr class="sep h-4">
+    <p class="supra px-4 pb-1">{% trans 'Hits, last 30d' %}</p>
     <div style="bottom: -1px;">
         {% include 'dashboard/includes/time_chart.html' with data=stats.chart_data sparkline=True height=100 name=object.uuid tooltip_format=stats.chart_tooltip_format granularity=stats.chart_granularity %}
     </div>

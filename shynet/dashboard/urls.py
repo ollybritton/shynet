@@ -27,6 +27,11 @@ urlpatterns = [
         name="service_session",
     ),
     path(
+        "service/<pk>/repeat-visitors/",
+        views.ServiceRepeatVisitorsView.as_view(),
+        name="service_repeat_visitors",
+    ),
+    path(
         "service/<pk>/locations/",
         views.ServiceLocationsListView.as_view(),
         name="service_location_list",

@@ -5,94 +5,109 @@
 {% block head_title %}{{object.name}} Session{% endblock %}
 
 {% block service_actions %}
-<a href="{% contextual_url 'dashboard:service' object.uuid %}" class="button field !low bg-neutral-000 w-auto">Analytics &rarr;</a>
+<a href="{% contextual_url 'dashboard:service_session_list' object.uuid %}" class="seg__item">&larr; {% trans 'Back to sessions' %}</a>
+{% if session.identifier %}
+<a href="{% url 'dashboard:service_repeat_visitors' object.uuid %}" class="seg__item ml-2"><i class="ti ti-repeat"></i>{% trans 'Other visits by this visitor' %} &rarr;</a>
+{% endif %}
 {% endblock %}
 
 {% block service_content %}
-<article class="card ~neutral !high">
+<article class="card">
     <div class="md:flex items-center justify-between">
         <div>
             <h3 class="heading text-2xl mr-4">
-                {{session.identifier|default:"Anonymous"}}, {{session.duration|naturaldelta}}
-                {% if session.is_bot %}<span class="chip ~critical !high text-base align-middle">{% trans 'Bot' %}{% if session.bot_reason %}: {{session.bot_reason}}{% endif %}</span>{% endif %}
+                {% if session.identifier %}{{session.identifier}}{% else %}<span class="is-unknown">{% trans 'Anonymous' %}</span>{% endif %}, {{session.duration|naturaldelta}}
+                {% if session.is_bot %}<span class="pill pill--bot align-middle"><i class="ti ti-robot"></i>{% trans 'Bot' %}{% if session.bot_reason %}: {{session.bot_reason}}{% endif %}</span>{% endif %}
             </h3>
         </div>
-        <div>
-            <p class="font-medium text-lg">{{session.start_time|date:"M j Y, g:i a"}} to
-                {{session.last_seen|date:"g:i a"}}{% if session.is_currently_active %} <span class="chip ~positive !high text-base">Online</span>{% endif %}</p>
+        <div class="flex items-center" style="gap: 0.5rem">
+            <p class="font-medium text-lg">{{session.start_time|date:"M j Y, g:i a"}} &ndash; {{session.last_seen|date:"g:i a"}}</p>
+            {% if session.is_currently_active %}<span class="pill pill--online"><span class="pill__dot"></span>{% trans 'Online' %}</span>{% endif %}
         </div>
     </div>
     <hr class="sep h-8 md:h-12">
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-gray-400 font-medium">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div>
-            <p>{% trans 'Browser' %}</p>
-            <p class="label">{{session.browser|default:"Unknown"}}</p>
+            <p class="supra">{% trans 'Browser' %}</p>
+            <p>{% if session.browser %}{{session.browser}}{% else %}<span class="is-unknown">{% trans 'Unknown' %}</span>{% endif %}</p>
         </div>
         <div>
-            <p>{% trans 'Device' %}</p>
-            <p class="label">{{session.device|default:"Unknown"}}</p>
+            <p class="supra">{% trans 'Device' %}</p>
+            <p>{% if session.device %}{{session.device}}{% else %}<span class="is-unknown">{% trans 'Unknown' %}</span>{% endif %}</p>
         </div>
         <div>
-            <p{% trans 'Device Type' %}</p>
-            <p class="label">{{session.device_type|title}}</p>
+            <p class="supra">{% trans 'Device Type' %}</p>
+            <p>{% if session.device_type %}{{session.device_type|title}}{% else %}<span class="is-unknown">{% trans 'Unknown' %}</span>{% endif %}</p>
         </div>
         <div>
-            <p>{% trans 'OS' %}</p>
-            <p class="label">{{session.os|default:"Unknown"}}</p>
+            <p class="supra">{% trans 'OS' %}</p>
+            <p>{% if session.os %}{{session.os}}{% else %}<span class="is-unknown">{% trans 'Unknown' %}</span>{% endif %}</p>
         </div>
         <div>
-            <p>{% trans 'Network' %}</p>
-            <p class="label">{{session.asn|default:"Unknown"}}</p>
+            <p class="supra">{% trans 'Network' %}</p>
+            <p>{% if session.asn %}{{session.asn}}{% else %}<span class="is-unknown">{% trans 'Unknown' %}</span>{% endif %}</p>
         </div>
         <div>
-            <p>{% trans 'Country' %}</p>
-            <p class="label"><span class="{{session.country|flag_class}}"></span>{{session.country|country_name}}</p>
+            <p class="supra">{% trans 'Country' %}</p>
+            <p><span class="{{session.country|flag_class}}"></span>{% if session.country %}{{session.country|country_name}}{% else %}<span class="is-unknown">{% trans 'Unknown' %}</span>{% endif %}</p>
         </div>
         <div>
-            <p>{% trans 'Location' %}</p>
-            <p class="label">
+            <p class="supra">{% trans 'Location' %}</p>
+            <p>
                 {% if session.latitude %}
-                <a href="{{session|location_url}}" target="_blank">{% trans 'Open in Maps' %} &nearr;</a>
+                <a href="{{session|location_url}}" target="_blank" rel="noopener">{% trans 'Open in Maps' %} &nearr;</a>
                 {% else %}
-                {% trans 'Unknown' %}
+                <span class="is-unknown">{% trans 'Unknown' %}</span>
                 {% endif %}
             </p>
         </div>
         <div>
-            <p>IP</p>
-            <p class="label" title="{{session.ip}}">{{session.ip|default:"Not Collected"|truncatechars:"16"}}</p>
+            <p class="supra">IP</p>
+            <p class="mono" title="{{session.ip}}">{% if session.ip %}{{session.ip|truncatechars:"16"}}{% else %}<span class="is-unknown">{% trans 'Not Collected' %}</span>{% endif %}</p>
         </div>
     </div>
 </article>
-<div class="">
-    {% for hit in session.hit_set.all %}
-    <article class="my-12 md:flex">
-        <div class="md:w-2/12 mb-2 md:mr-4 pt-4 md:text-right">
-            <div class="text-lg font-medium">{{hit.start_time|date:"g:i a"}}</div>
+
+<hr class="sep h-8 md:h-12">
+
+<div class="timeline">
+    {% for item in timeline %}
+    <div class="timeline__item">
+        <div class="timeline__card">
+            <div class="flex items-center justify-between flex-wrap" style="gap: 0.5rem">
+                <span class="timeline__step">{% blocktrans with step=item.step total=item.total %}Hit {{ step }} of {{ total }}{% endblocktrans %}</span>
+                <span class="flex items-center" style="gap: 0.75rem">
+                    <span class="mono" style="font-size:0.85rem">{{item.hit.start_time|date:"g:i a"}}</span>
+                    <span class="timeline__cumulative">+{{item.cumulative|naturaldelta}}</span>
+                    {% if item.hit.heartbeats > 0 %}<span class="pill pill--repeat" title="{% trans 'Engaged hit (heartbeats received)' %}"><i class="ti ti-activity"></i>{% trans 'engaged' %}</span>{% endif %}
+                </span>
+            </div>
+            <div class="md:flex justify-between items-start mt-2">
+                <div class="mb-2 md:mb-0 md:w-1/2 md:pr-4" style="min-width:0">
+                    <p class="font-medium truncate">{% if item.hit.location %}{{item.hit.location|urlize}}{% else %}<span class="is-unknown">{% trans 'Unknown' %}</span>{% endif %}</p>
+                    {% if item.hit.referrer %}
+                    <p class="text-sm" style="color: var(--global-text-color-light)">{% trans 'via' %} {{item.hit.referrer|urlize}}</p>
+                    {% endif %}
+                </div>
+                <div class="grid grid-cols-3 gap-3 md:w-1/2">
+                    <div>
+                        <p class="supra">{% trans 'Duration' %}</p>
+                        <p class="mono">{{item.hit.duration|naturaldelta}}</p>
+                    </div>
+                    <div>
+                        <p class="supra">{% trans 'Load' %}</p>
+                        <p class="mono">{% if item.hit.load_time %}{{item.hit.load_time|floatformat:"0"}}ms{% else %}<span class="is-unknown">?</span>{% endif %}</p>
+                    </div>
+                    <div>
+                        <p class="supra">{% trans 'Tracker' %}</p>
+                        <p>{% if item.hit.tracker %}{{item.hit.tracker}}{% else %}<span class="is-unknown">&mdash;</span>{% endif %}</p>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="md:flex card ~neutral !low flex-grow justify-between">
-            <div class="mb-4 md:mb-0 md:w-1/2">
-                <p class="label font-medium text-lg truncate">{{hit.location|default:"Unknown"|urlize}}</p>
-                {% if hit.referrer %}
-                <p>via {{hit.referrer|urlize}}<p>
-                {% endif %}
-            </div>
-            <div class="grid grid-cols-3 gap-3 md:pl-8 md:w-1/2">
-                <div>
-                    <p>{% trans 'Duration' %}</p>
-                    <p class="label">{{hit.duration|naturaldelta}}</p>
-                </div>
-                <div>
-                    <p>{% trans 'Load' %}</p>
-                    <p class="label">{{hit.load_time|floatformat:"0"}}ms</p>
-                </div>
-                <div>
-                    <p>{% trans 'Tracker' %}</p>
-                    <p class="label">{{hit.tracker}}</p>
-                </div>
-            </div>
-            <div>
-    </article>
+    </div>
+    {% empty %}
+    <p class="is-unknown">{% trans 'No hits recorded for this session.' %}</p>
     {% endfor %}
 </div>
 {% endblock %}

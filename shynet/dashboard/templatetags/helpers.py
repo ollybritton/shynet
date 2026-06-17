@@ -199,7 +199,7 @@ def urldisplay(url):
 class ContextualURLNode(template.Node):
     """Extension of the Django URLNode to support including contextual parameters in URL outputs. In other words, URLs generated will keep the start and end date parameters."""
 
-    CONTEXT_PARAMS = ["startDate", "endDate", "segment"]
+    CONTEXT_PARAMS = ["startDate", "endDate", "segment", "engaged"]
 
     def __init__(self, urlnode):
         self.urlnode = urlnode

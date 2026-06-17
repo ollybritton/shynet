@@ -1,5 +1,65 @@
+{% load i18n %}
+
 <div class="pl-2">
+  <div class="seg mb-3" role="group" aria-label="{% trans 'Theme' %}">
+    <button type="button" class="seg__item" data-theme-choice="light" title="{% trans 'Light' %}" aria-label="{% trans 'Light theme' %}">
+      <i class="ti ti-sun"></i>
+    </button>
+    <button type="button" class="seg__item" data-theme-choice="system" title="{% trans 'System' %}" aria-label="{% trans 'System theme' %}">
+      <i class="ti ti-device-desktop"></i>
+    </button>
+    <button type="button" class="seg__item" data-theme-choice="dark" title="{% trans 'Dark' %}" aria-label="{% trans 'Dark theme' %}">
+      <i class="ti ti-moon"></i>
+    </button>
+  </div>
   <p class="support text-gray-600">
     <a href="https://github.com/milesmcc/shynet">Shynet {{version}}</a>
   </p>
 </div>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var buttons = document.querySelectorAll("[data-theme-choice]");
+
+    function resolve(setting) {
+      if (setting === "system") {
+        return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      }
+      return setting;
+    }
+
+    function reflect(setting) {
+      buttons.forEach(function (b) {
+        b.classList.toggle("is-active", b.getAttribute("data-theme-choice") === setting);
+      });
+    }
+
+    function apply(setting, animate) {
+      try { localStorage.setItem("shynet-theme", setting); } catch (e) {}
+      root.setAttribute("data-theme-setting", setting);
+      if (animate) {
+        root.classList.add("transition");
+        window.setTimeout(function () { root.classList.remove("transition"); }, 800);
+      }
+      root.setAttribute("data-theme", resolve(setting));
+      reflect(setting);
+    }
+
+    var current = root.getAttribute("data-theme-setting") || "system";
+    reflect(current);
+
+    buttons.forEach(function (b) {
+      b.addEventListener("click", function () {
+        apply(b.getAttribute("data-theme-choice"), true);
+      });
+    });
+
+    // Follow OS changes while on "system".
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () {
+      if ((root.getAttribute("data-theme-setting") || "system") === "system") {
+        root.setAttribute("data-theme", resolve("system"));
+      }
+    });
+  })();
+</script>

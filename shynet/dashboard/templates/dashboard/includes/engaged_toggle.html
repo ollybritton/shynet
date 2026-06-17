@@ -1,0 +1,15 @@
+{% load i18n %}
+{% comment %}
+"Engaged only" toggle. Mirrors segment_toggle.html. Emits ?engaged=true to
+hide zero-duration bounce sessions from every KPI, chart and breakdown, and
+?engaged= (empty) to show all sessions. Preserves the active date range and
+segment. Kept sticky across the dashboard via ContextualURLNode.CONTEXT_PARAMS.
+{% endcomment %}
+<div class="seg" role="group" aria-label="{% trans 'Engagement filter' %}">
+    {% for option in engaged_options %}
+    <a href="?{% if option.value %}engaged=true&{% endif %}{% if segment %}segment={{ segment }}&{% endif %}{% if start_date %}startDate={{ start_date|date:'Y-m-d' }}&{% endif %}{% if end_date %}endDate={{ end_date|date:'Y-m-d' }}{% endif %}"
+        class="seg__item{% if option.active %} is-active{% endif %}"
+        {% if option.active %}aria-current="true"{% endif %}>
+        {% if option.value %}<i class="ti ti-activity" aria-hidden="true"></i>{% endif %}{{ option.name }}</a>
+    {% endfor %}
+</div>

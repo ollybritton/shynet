@@ -1,11 +1,37 @@
+{% load i18n %}
+{% if not sparkline %}
+<div class="flex items-center justify-between flex-wrap gap-2 px-2 pt-1">
+    <div class="flex items-center" style="gap: 1rem; font-size: 0.8rem; color: var(--global-text-color-light)">
+        <span class="flex items-center" style="gap: 0.35rem">
+            <span style="display:inline-block;width:0.75rem;height:0.75rem;border-radius:3px;background:var(--bar-fill);border:1px solid var(--global-theme-color)"></span>
+            {% trans 'Hits' %}
+        </span>
+        <span class="flex items-center" style="gap: 0.35rem">
+            <span style="display:inline-block;width:0.9rem;height:0;border-top:2px solid var(--global-theme-color)"></span>
+            {% trans 'Sessions' %}
+        </span>
+    </div>
+    {% if granularity == "daily" and click_zoom %}
+    <span style="font-size: 0.75rem; color: var(--global-text-color-light)">{% trans 'Click a day to zoom in.' %}</span>
+    {% endif %}
+</div>
+{% endif %}
 <div id="chart{{name|default:'Main'}}"></div>
 <script>
+    (function () {
+        var styles = getComputedStyle(document.documentElement);
+        var themeColor = styles.getPropertyValue('--global-theme-color').trim() || '#a83d6d';
+        var barFill = styles.getPropertyValue('--bar-fill').trim() || 'rgba(168,61,109,0.12)';
+        var divider = styles.getPropertyValue('--global-divider-color').trim() || 'rgba(0,0,0,0.1)';
+        var textLight = styles.getPropertyValue('--global-text-color-light').trim() || '#767676';
+
     var triggerMatchesChartOptions = {
         dataLabels: {
             enabled: false
         },
         tooltip: {
             shared: true,
+            theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light',
             x: {
                 format: '{{tooltip_format|default:"MMM d"}}',
             },
@@ -39,6 +65,7 @@
             {% endif %}
         },
         grid: {
+            borderColor: divider,
             padding: {
                 right: 0,
                 left: -8,
@@ -67,26 +94,32 @@
         xaxis: {
             type: "datetime",
             labels: {
-                datetimeUTC: false
+                datetimeUTC: false,
+                style: { colors: textLight }
             },
         },
         stroke: {
             width: 2,
             curve: 'smooth',
         },
+        fill: {
+            type: ['solid', 'solid'],
+            opacity: [1, 1],
+        },
         series: [{
             name: "Hits",
             type: 'area',
-            color: "#ddd6fe",
+            color: barFill,
             data: {{data.hits|safe}}
         }, {
             name: "Sessions",
             type: 'line',
-            color: "#805AD5",
+            color: themeColor,
             data: {{data.sessions|safe}}
         }],
         labels: {{data.labels|safe}}
     };
     var triggerMatchesChart = new ApexCharts(document.querySelector("#chart{{name|default:'Main'}}"), triggerMatchesChartOptions);
     triggerMatchesChart.render();
+    })();
 </script>

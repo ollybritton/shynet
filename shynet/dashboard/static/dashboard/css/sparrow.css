@@ -1,0 +1,542 @@
+/* ===========================================================================
+   Sparrow reskin for Shynet's dashboard.
+
+   This stylesheet is loaded LAST in base.html <head> so it wins the cascade.
+   It does NOT fork or recompile a17t. Instead it:
+     1. Defines Sparrow's --global-* design tokens (light + [data-theme='dark']).
+     2. Bridges a17t's own --color-* custom properties to those tokens, so the
+        existing utility classes (text-urge-600, ~neutral, bg-neutral-100, ...)
+        recolour for free with near-zero template churn.
+     3. Adds a handful of component classes the new templates use
+        (.reading-surface, .seg, timeline, chips, .is-unknown, tabler icons).
+
+   a17t resolves colours through a fallback chain, e.g.
+       .text-urge-600 { color: var(--color-urge-600, #7c3aed) }
+       --color-urge-600-fallback: var(--color-urge-600, #7c3aed)
+       --color-urge: var(--color-urge-600-fallback)
+   so overriding the *inner* --color-urge-<n> vars cascades everywhere.
+   =========================================================================== */
+
+/* ---- Sparrow design tokens -------------------------------------------------- */
+:root {
+    --global-bg-color: #ffffff;
+    --global-card-bg-color: #ffffff;
+    --global-text-color: #000000;
+    --global-text-color-light: #767676;
+    --global-theme-color: #a83d6d;
+    --global-hover-color: #d74687;
+    --global-divider-color: rgba(0, 0, 0, 0.1);
+    --global-code-bg-color: rgba(181, 9, 172, 0.05);
+
+    --pos: #00ab37;
+    --pos-bright: #11d68b;
+    --neg: #ff3636;
+    --neg-dark: #b71c1c;
+    --warn: #efcc00;
+
+    --bar-fill: rgba(168, 61, 109, 0.12);
+    --table-bg: #fafafa;
+    --table-head-bg: #f0f0f0;
+    --table-border: #eee;
+
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+    --font-mono: "SFMono-Regular", "Menlo", "Monaco", "Consolas",
+        "Liberation Mono", "Courier New", monospace;
+}
+
+html[data-theme="dark"] {
+    --global-bg-color: #000000;
+    --global-card-bg-color: #212529;
+    --global-text-color: #d3d3cd;
+    --global-text-color-light: #828282;
+    --global-theme-color: #2698ba;
+    --global-hover-color: #2698ba;
+    --global-divider-color: #424246;
+    --global-code-bg-color: #2c3237;
+
+    --bar-fill: rgba(38, 152, 186, 0.18);
+    --table-bg: #15252d;
+    --table-head-bg: #182932;
+    --table-border: #1e3440;
+}
+
+/* ---- Bridge a17t -> Sparrow ------------------------------------------------- */
+/* Recolour the a17t "urge" accent ramp to the Sparrow theme colour. The whole
+   ramp collapses to the theme colour (with the 100 shade reused as a soft tint)
+   so text-urge-600/700, ~urge buttons/chips and the active nav all follow it. */
+:root {
+    --color-urge-000: var(--global-card-bg-color);
+    --color-urge-50: var(--bar-fill);
+    --color-urge-100: var(--bar-fill);
+    --color-urge-200: var(--bar-fill);
+    --color-urge-300: var(--global-hover-color);
+    --color-urge-400: var(--global-hover-color);
+    --color-urge-500: var(--global-theme-color);
+    --color-urge-600: var(--global-theme-color);
+    --color-urge-700: var(--global-theme-color);
+    --color-urge-800: var(--global-theme-color);
+    --color-urge-900: var(--global-theme-color);
+
+    /* Neutral surfaces map onto Sparrow's card/divider tokens. The page bg is
+       what bg-neutral-100 resolves to in base.html. */
+    --color-neutral-000: var(--global-card-bg-color);
+    --color-neutral-50: var(--global-card-bg-color);
+    --color-neutral-100: var(--global-bg-color);
+    --color-neutral-200: var(--global-divider-color);
+    --color-neutral-300: var(--global-divider-color);
+    --color-neutral-400: var(--global-text-color-light);
+    --color-neutral-500: var(--global-text-color-light);
+    --color-neutral-600: var(--global-text-color-light);
+    --color-neutral-700: var(--global-text-color);
+    --color-neutral-800: var(--global-text-color);
+    --color-neutral-900: var(--global-text-color);
+
+    /* Positive / critical / warning accents -> Sparrow status tokens. */
+    --color-positive-400: var(--pos);
+    --color-positive-500: var(--pos);
+    --color-critical-400: var(--neg);
+    --color-critical-500: var(--neg);
+    --color-warning-400: var(--warn);
+    --color-warning-500: var(--warn);
+
+    /* Global text/title colours. */
+    --color-title: var(--global-text-color);
+    --color-content: var(--global-text-color);
+}
+
+/* The dashboard templates lean on text-gray-{400,500,600} for muted labels;
+   a17t's build does not ship these, so map them to the light text token. */
+.text-gray-400,
+.text-gray-500,
+.text-gray-600 {
+    color: var(--global-text-color-light) !important;
+}
+
+/* ---- Typography ------------------------------------------------------------- */
+body {
+    font-family: var(--font-body) !important;
+    background-color: var(--global-bg-color);
+    color: var(--global-text-color);
+    font-size: 1.05rem;
+}
+
+main,
+.reading-surface {
+    line-height: 1.7;
+}
+
+.heading,
+h1.heading,
+h2.heading,
+h3.heading,
+h4.heading {
+    font-weight: 400;
+    color: var(--global-text-color);
+}
+
+.supra {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.72rem;
+    color: var(--global-text-color-light);
+}
+
+.mono,
+.tabular {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+}
+
+a {
+    color: var(--global-theme-color);
+}
+
+a:hover {
+    color: var(--global-hover-color);
+}
+
+/* ---- Surfaces & cards ------------------------------------------------------- */
+.reading-surface {
+    background: var(--global-card-bg-color);
+    border: 1px solid var(--global-divider-color);
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+}
+
+.card {
+    background: var(--global-card-bg-color) !important;
+    border: 1px solid var(--global-divider-color);
+    border-radius: 10px;
+    color: var(--global-text-color);
+    box-shadow: none;
+}
+
+/* Brand + active sidebar item follow the theme colour. */
+.icon.\~urge i,
+i.text-urge-600,
+i.text-urge-700 {
+    color: var(--global-theme-color) !important;
+}
+
+.portal.active,
+.portal.\~urge.active {
+    color: var(--global-theme-color) !important;
+    background: color-mix(in srgb, var(--global-theme-color) 10%, transparent) !important;
+}
+
+/* ---- Tables ----------------------------------------------------------------- */
+.table tbody {
+    background: var(--table-bg);
+}
+
+.table thead {
+    background: var(--table-head-bg);
+}
+
+.table th,
+.table td {
+    padding: 0.35rem 0.5rem;
+    border-bottom: 1px solid var(--table-border);
+}
+
+.table thead th {
+    color: var(--global-text-color-light);
+    font-weight: 600;
+}
+
+.table tbody tr:nth-child(2n) {
+    background-color: transparent;
+}
+
+/* ---- Buttons & segmented controls ------------------------------------------ */
+/* Sparrow segmented control. Used by segment_toggle, engaged_toggle and the
+   geo map/table switch. Built from plain anchors/buttons + .seg classes. */
+.seg {
+    display: inline-flex;
+    align-items: center;
+}
+
+.seg__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.7rem;
+    border: 1px solid var(--global-divider-color);
+    border-radius: 7px;
+    background: transparent;
+    color: var(--global-text-color-light);
+    font-size: 0.85rem;
+    line-height: 1.2;
+    cursor: pointer;
+    user-select: none;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.seg__item + .seg__item {
+    margin-left: 0.35rem;
+}
+
+.seg__item:hover {
+    color: var(--global-theme-color);
+    border-color: var(--global-theme-color);
+}
+
+.seg__item.is-active {
+    background: color-mix(in srgb, var(--global-theme-color) 12%, transparent);
+    color: var(--global-theme-color);
+    border-color: var(--global-theme-color);
+    font-weight: 500;
+}
+
+/* ---- Chips & pills ---------------------------------------------------------- */
+.pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border-radius: 999px;
+    border: 1px solid var(--global-divider-color);
+    padding: 0.15rem 0.6rem;
+    font-size: 0.78rem;
+    line-height: 1.3;
+    white-space: nowrap;
+    color: var(--global-text-color-light);
+    background: var(--global-card-bg-color);
+}
+
+.pill__dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+    flex: none;
+    display: inline-block;
+}
+
+.pill--online .pill__dot {
+    background: var(--pos-bright);
+}
+
+.pill--idle .pill__dot {
+    background: var(--global-text-color-light);
+    opacity: 0.5;
+}
+
+.pill--bot {
+    color: var(--neg);
+    border-color: color-mix(in srgb, var(--neg) 40%, transparent);
+    background: color-mix(in srgb, var(--neg) 8%, transparent);
+}
+
+.pill--bounce {
+    color: var(--global-text-color-light);
+    font-style: italic;
+}
+
+.pill--repeat {
+    color: var(--global-theme-color);
+    border-color: color-mix(in srgb, var(--global-theme-color) 40%, transparent);
+}
+
+.pill--count {
+    color: var(--global-theme-color);
+    border-color: color-mix(in srgb, var(--global-theme-color) 40%, transparent);
+    background: color-mix(in srgb, var(--global-theme-color) 8%, transparent);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---- KPI row ---------------------------------------------------------------- */
+.kpi-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0;
+}
+
+@media (min-width: 768px) {
+    .kpi-row {
+        grid-template-columns: repeat(6, 1fr);
+    }
+}
+
+.kpi-cell {
+    padding: 0.4rem 1rem;
+    border-bottom: 1px solid var(--global-divider-color);
+}
+
+@media (min-width: 768px) {
+    .kpi-cell {
+        border-bottom: none;
+        border-right: 1px solid var(--global-divider-color);
+    }
+    .kpi-cell:last-child {
+        border-right: none;
+    }
+}
+
+.kpi-cell__num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-weight: 400;
+    font-size: 1.7rem;
+    line-height: 1.2;
+    color: var(--global-text-color);
+}
+
+.kpi-cell__num a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.kpi-cell__num a:hover {
+    color: var(--global-theme-color);
+}
+
+/* ---- Noise disclosure line -------------------------------------------------- */
+.noise-line {
+    color: var(--global-text-color-light);
+    font-size: 0.9rem;
+}
+
+.noise-line a {
+    color: var(--global-text-color-light);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.noise-line a:hover {
+    color: var(--global-theme-color);
+}
+
+/* ---- Graceful "Unknown" handling ------------------------------------------- */
+.is-unknown {
+    color: var(--global-text-color-light);
+    font-style: italic;
+}
+
+/* ---- Session timeline (single-session journey) ----------------------------- */
+.timeline {
+    position: relative;
+    margin-left: 0.5rem;
+    padding-left: 1.5rem;
+    border-left: 2px solid var(--global-divider-color);
+}
+
+.timeline__item {
+    position: relative;
+    margin-bottom: 1.25rem;
+}
+
+.timeline__item::before {
+    content: "";
+    position: absolute;
+    left: calc(-1.5rem - 6px);
+    top: 0.9rem;
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: var(--global-theme-color);
+    border: 2px solid var(--global-card-bg-color);
+}
+
+.timeline__card {
+    background: var(--global-card-bg-color);
+    border: 1px solid var(--global-divider-color);
+    border-left: 3px solid var(--global-theme-color);
+    border-radius: 6px;
+    padding: 0.6rem 1rem;
+}
+
+.timeline__step {
+    display: inline-block;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--global-text-color-light);
+    font-variant-numeric: tabular-nums;
+}
+
+.timeline__cumulative {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--global-text-color-light);
+    font-size: 0.8rem;
+}
+
+/* ---- Caveat / warning banner ----------------------------------------------- */
+.caveat {
+    border-left: 5px solid var(--warn);
+    background: color-mix(in srgb, var(--warn) 10%, transparent);
+    border-radius: 6px;
+    padding: 1em 1.25em;
+    color: var(--global-text-color);
+}
+
+/* ---- Bar fill (breakdown tables) ------------------------------------------- */
+.bar-fill {
+    background-color: var(--bar-fill);
+}
+
+/* ---- Repeat-visitor / session row list ------------------------------------- */
+.srow {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.6rem 0.25rem;
+    border-bottom: 1px solid var(--global-divider-color);
+    flex-wrap: wrap;
+}
+
+.srow:last-child {
+    border-bottom: none;
+}
+
+.srow__main {
+    min-width: 0;
+    flex: 1 1 16rem;
+}
+
+.srow__meta {
+    display: flex;
+    gap: 1.5rem;
+    align-items: baseline;
+    flex: none;
+    text-align: right;
+}
+
+.srow__num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--global-text-color);
+}
+
+.srow__label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--global-text-color-light);
+    display: block;
+}
+
+/* ---- Smooth light/dark transition ------------------------------------------ */
+html.transition,
+html.transition *,
+html.transition *::before,
+html.transition *::after {
+    transition: background-color 750ms ease, border-color 750ms ease,
+        color 750ms ease, fill 750ms ease !important;
+    transition-delay: 0 !important;
+}
+
+/* ---- Litepicker dark-mode overrides ---------------------------------------- */
+html[data-theme="dark"] .litepicker {
+    --litepicker-month-header-color: var(--global-text-color);
+    --litepicker-day-color: var(--global-text-color);
+    --litepicker-month-day-color: var(--global-text-color);
+    --litepicker-container-months-color-bg: var(--global-card-bg-color);
+    --litepicker-container-footer-color-bg: var(--global-card-bg-color);
+    --litepicker-button-prev-month-color: var(--global-text-color-light);
+    --litepicker-button-next-month-color: var(--global-text-color-light);
+}
+
+/* ---- Tabler icons (new UI glyphs only) ------------------------------------- */
+@font-face {
+    font-family: "tabler-icons";
+    font-style: normal;
+    font-weight: 400;
+    font-display: block;
+    src: url("../fonts/tabler-icons.woff2") format("woff2");
+}
+
+.ti {
+    font-family: "tabler-icons" !important;
+    font-style: normal;
+    font-weight: 400;
+    font-variant: normal;
+    text-transform: none;
+    line-height: 1;
+    speak: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    display: inline-block;
+}
+
+.ti-activity::before { content: "\ed23"; }
+.ti-arrow-left::before { content: "\ea1b"; }
+.ti-arrow-right::before { content: "\ea1c"; }
+.ti-chevron-down::before { content: "\ea5f"; }
+.ti-chevron-right::before { content: "\ea61"; }
+.ti-circle-filled::before { content: "\f671"; }
+.ti-clock::before { content: "\ea70"; }
+.ti-device-desktop::before { content: "\ea89"; }
+.ti-external-link::before { content: "\ea99"; }
+.ti-map::before { content: "\eae9"; }
+.ti-moon::before { content: "\eaf8"; }
+.ti-repeat::before { content: "\eb72"; }
+.ti-robot::before { content: "\f00b"; }
+.ti-sun::before { content: "\eb30"; }
+.ti-table::before { content: "\eba1"; }
+.ti-user::before { content: "\eb4d"; }
+.ti-users::before { content: "\ebf2"; }
+.ti-world::before { content: "\eb54"; }

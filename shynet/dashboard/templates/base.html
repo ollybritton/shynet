@@ -4,6 +4,26 @@
 <html>
 
 <head>
+  {% comment %}
+  Set the theme on <html> BEFORE first paint so there is no flash of the wrong
+  theme. data-theme-setting is the user's explicit choice (light/dark/system);
+  data-theme is the resolved value the CSS reads.
+  {% endcomment %}
+  <script>
+    (function () {
+      try {
+        var setting = localStorage.getItem("shynet-theme") || "system";
+        var resolved = setting;
+        if (setting === "system") {
+          resolved = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        }
+        document.documentElement.setAttribute("data-theme-setting", setting);
+        document.documentElement.setAttribute("data-theme", resolved);
+      } catch (e) {
+        document.documentElement.setAttribute("data-theme", "light");
+      }
+    })();
+  </script>
   <title>{% block head_title %}Privacy-oriented analytics{% endblock %} | {{request.site.name}}</title>
   <meta name="robots" content="noindex">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,6 +40,8 @@
   <link rel="stylesheet" href="{% static 'litepicker/dist/css/litepicker.css' %}">
   {% block extra_head %}
   {% endblock %}
+  {% comment %}Loaded LAST so the Sparrow reskin wins the cascade over a17t.{% endcomment %}
+  <link rel="stylesheet" href="{% static 'dashboard/css/sparrow.css' %}">
 </head>
 
 <body class="bg-neutral-100 min-h-full overflow-x-hidden">
@@ -28,9 +50,9 @@
   <section class="max-w-screen-xl mx-auto px-4 py-4 md:py-12 md:flex">
     <aside
       class="mb-2 md:w-2/12 md:pr-6 relative flex flex-wrap md:block justify-between items-center overflow-x-hidden">
-      <a class="icon ~urge ml-2 md:ml-6 md:mb-8 md:mt-3" href="{% url 'dashboard:dashboard' %}">
-        <i class="fas fa-binoculars fa-3x text-urge-600 hidden md:block"></i>
-        <i class="fas fa-binoculars fa-2x text-urge-600 md:hidden"></i>
+      <a class="icon ~urge ml-2 md:ml-6 md:mb-8 md:mt-3" href="{% url 'dashboard:dashboard' %}" style="color: var(--global-theme-color)">
+        <i class="fas fa-binoculars fa-3x hidden md:block" style="color: var(--global-theme-color)"></i>
+        <i class="fas fa-binoculars fa-2x md:hidden" style="color: var(--global-theme-color)"></i>
       </a>
 
       <a tabindex="0" role="button" class="button ~neutral !low md:hidden"
@@ -50,6 +72,11 @@
         {% for service in user.owning_services.all %}
         {% contextual_url 'dashboard:service' service.uuid as url %}
         {% include 'dashboard/includes/sidebar_portal.html' with label=service.name url=url icon=service.link|iconify %}
+        {% if request.resolver_match.kwargs.pk == service.uuid|stringformat:"s" %}
+        {% contextual_url 'dashboard:service_repeat_visitors' service.uuid as repeat_url %}
+        {% trans 'Repeat visitors' as repeat_label %}
+        {% include 'dashboard/includes/sidebar_portal.html' with label=repeat_label url=repeat_url indent=True %}
+        {% endif %}
         {% endfor %}
 
         {% endif %}
@@ -122,7 +149,7 @@
       </div>
       <hr class="sep">
       {% endif %}
-      <main>
+      <main class="reading-surface">
         {% block content %}
         {% endblock %}
       </main>
