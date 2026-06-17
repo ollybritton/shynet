@@ -21,8 +21,73 @@
     <a href="{% contextual_url 'dashboard:service_session_list' object.uuid %}" class="seg__item">{% trans 'Clear filter' %} &times;</a>
 </div>
 {% endif %}
-<div class="card mb-8 pt-2 max-w-full overflow-x-auto">
-    {% include 'dashboard/includes/session_list.html' %}
+<div class="card mb-4 pt-2 max-w-full overflow-x-auto">
+    <div id="session-rows" data-next-page="{% if page_obj.has_next %}{{ page_obj.next_page_number }}{% endif %}">
+        {% include 'dashboard/includes/_session_rows.html' %}
+    </div>
+    <div id="session-sentinel" aria-hidden="true"></div>
+    <p id="session-scroll-status" class="is-unknown" style="text-align:center; padding:0.6rem 0; min-height:1.4rem" role="status" aria-live="polite"></p>
 </div>
-{% pagination page_obj request %}
+{% comment %}No-JS fallback: ordinary pagination still works.{% endcomment %}
+<noscript>
+    {% pagination page_obj request %}
+</noscript>
+{% endblock %}
+
+{% block extra_body %}
+<script>
+    (function () {
+        var rows = document.getElementById("session-rows");
+        var sentinel = document.getElementById("session-sentinel");
+        var status = document.getElementById("session-scroll-status");
+        if (!rows || !sentinel || !("IntersectionObserver" in window)) return;
+
+        var nextPage = rows.getAttribute("data-next-page");
+        var loading = false;
+
+        function finish() {
+            if (status) status.textContent = "{% trans 'That’s everything.' %}";
+            if (sentinel.parentNode) sentinel.parentNode.removeChild(sentinel);
+        }
+        if (!nextPage) { finish(); return; }
+
+        function fragmentUrl(page) {
+            var params = new URLSearchParams(window.location.search);
+            params.set("partial", "1");
+            params.set("page", page);
+            return window.location.pathname + "?" + params.toString();
+        }
+
+        function loadMore() {
+            if (loading || !nextPage) return;
+            loading = true;
+            if (status) status.textContent = "{% trans 'Loading…' %}";
+            fetch(fragmentUrl(nextPage), { headers: { "X-Requested-With": "XMLHttpRequest" }, credentials: "same-origin" })
+                .then(function (r) {
+                    if (!r.ok) throw new Error("status " + r.status);
+                    nextPage = r.headers.get("X-Next-Page");
+                    return r.text();
+                })
+                .then(function (html) {
+                    var tmp = document.createElement("div");
+                    tmp.innerHTML = html.trim();
+                    while (tmp.firstChild) rows.appendChild(tmp.firstChild);
+                    loading = false;
+                    if (status) status.textContent = "";
+                    if (!nextPage) { finish(); return; }
+                    // Tall viewport: if the sentinel is still visible, keep filling.
+                    if (sentinel.getBoundingClientRect().top < window.innerHeight + 300) loadMore();
+                })
+                .catch(function () {
+                    loading = false;
+                    if (status) status.textContent = "{% trans 'Couldn’t load more — scroll to retry.' %}";
+                });
+        }
+
+        var observer = new IntersectionObserver(function (entries) {
+            entries.forEach(function (e) { if (e.isIntersecting) loadMore(); });
+        }, { rootMargin: "400px 0px" });
+        observer.observe(sentinel);
+    })();
+</script>
 {% endblock %}

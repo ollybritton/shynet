@@ -3,7 +3,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.cache import cache
 from django.db.models import Q, Count, Min, Max, F
-from django.shortcuts import get_object_or_404, reverse, redirect
+from django.shortcuts import get_object_or_404, render, reverse, redirect
 from django.views.generic import (
     CreateView,
     DeleteView,
@@ -184,6 +184,28 @@ class ServiceSessionsListView(
         data["object"] = self.get_object()
         data["identifier"] = self.get_identifier()
         return data
+
+    def get(self, request, *args, **kwargs):
+        """Serve just the session rows for infinite scroll when ?partial=1.
+
+        Progressive enhancement: the full page still renders normally (with a
+        noscript pagination fallback), but the client-side infinite scroll
+        fetches subsequent pages as lightweight row fragments. The next page
+        number is returned in the X-Next-Page header so the client knows when
+        to stop.
+        """
+        if not request.GET.get("partial"):
+            return super().get(request, *args, **kwargs)
+
+        self.object_list = self.get_queryset()
+        context = self.get_context_data()
+        response = render(
+            request, "dashboard/includes/_session_rows.html", context
+        )
+        page_obj = context.get("page_obj")
+        if page_obj is not None and page_obj.has_next():
+            response["X-Next-Page"] = str(page_obj.next_page_number())
+        return response
 
 
 class ServiceLocationsListView(

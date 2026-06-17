@@ -1,0 +1,52 @@
+{% load i18n humanize helpers %}
+{% comment %}
+Just the per-session row anchors, extracted so they can be served on their own
+as an infinite-scroll fragment (see ServiceSessionsListView.get with ?partial=1)
+and reused inside session_list.html. No wrapper element here: appended fragments
+flow straight into the existing #session-rows container.
+{% endcomment %}
+{% for session in object_list %}
+<a href="{% contextual_url 'dashboard:service_session' object.pk session.pk %}" class="srow" style="text-decoration:none; color:inherit">
+    <div class="srow__main">
+        <div class="flex items-center" style="gap: 0.5rem; flex-wrap: wrap">
+            <span style="color: var(--global-theme-color); font-weight: 500">
+                {{ session.start_time|date:"DATETIME_FORMAT"|capfirst }}
+            </span>
+            {% if session.is_currently_active %}
+            <span class="pill pill--online"><span class="pill__dot"></span>{% trans 'Online' %}</span>
+            {% endif %}
+            {% if session.is_bot %}
+            <span class="pill pill--bot"><i class="ti ti-robot" aria-hidden="true"></i>{% trans 'Bot' %}{% if session.bot_reason %}: {{ session.bot_reason }}{% endif %}</span>
+            {% elif session.is_bounce and not engaged %}
+            <span class="pill pill--bounce">{% trans 'Bounce' %}</span>
+            {% endif %}
+            {% if session.identifier %}
+            <span class="pill pill--repeat"><i class="ti ti-repeat" aria-hidden="true"></i>{% trans 'Repeat' %}</span>
+            {% endif %}
+        </div>
+        <div class="flex items-center mt-1" style="gap: 0.5rem; flex-wrap: wrap; font-size: 0.85rem">
+            {% if session.identifier %}
+            <span class="chip ~neutral">{{ session.identifier }}</span>
+            {% else %}
+            <span class="is-unknown">{% trans 'Anonymous' %}</span>
+            {% endif %}
+            <span class="flex items-center">
+                <span class="{{ session.country|flag_class }}"></span>
+                {% if session.asn %}{{ session.asn }}{% else %}<span class="is-unknown">{% trans 'Unknown network' %}</span>{% endif %}
+            </span>
+        </div>
+    </div>
+    <div class="srow__meta">
+        <div>
+            <span class="srow__label">{% trans 'Duration' %}</span>
+            <span class="srow__num">{{ session.duration|naturaldelta }}</span>
+        </div>
+        <div>
+            <span class="srow__label">{% trans 'Hits' %}</span>
+            <span class="srow__num">{{ session.hit_set.count|intcomma }}</span>
+        </div>
+    </div>
+</a>
+{% empty %}
+<p class="is-unknown py-2">{% trans 'No sessions in this range yet' %}...</p>
+{% endfor %}

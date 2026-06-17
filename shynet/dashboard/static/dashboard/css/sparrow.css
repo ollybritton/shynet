@@ -540,3 +540,79 @@ html[data-theme="dark"] .litepicker {
 .ti-user::before { content: "\eb4d"; }
 .ti-users::before { content: "\ebf2"; }
 .ti-world::before { content: "\eb54"; }
+
+/* ---- Infinite scroll (sessions list) --------------------------------------- */
+#session-sentinel {
+    height: 1px;
+}
+
+#session-scroll-status:empty {
+    display: none;
+}
+
+/* ---- Service controls row -------------------------------------------------- */
+.service-actions {
+    gap: 0.4rem;
+}
+
+/* ---- Larger hit areas on touch devices (any width) ------------------------- */
+@media (pointer: coarse) {
+    .seg__item {
+        min-height: 40px;
+        padding: 0.5rem 0.8rem;
+        font-size: 0.9rem;
+    }
+    .srow {
+        padding-top: 0.7rem;
+        padding-bottom: 0.7rem;
+    }
+}
+
+/* ---- Phone layout (below a17t's md breakpoint) ----------------------------- */
+@media (max-width: 767px) {
+    body {
+        font-size: 1rem;
+    }
+
+    .reading-surface {
+        padding: 0.9rem 0.95rem;
+        border-radius: 8px;
+    }
+
+    /* Segmented controls wrap instead of overflowing; the per-service controls
+       row takes the full width so date range + toggles stack cleanly. */
+    .seg {
+        flex-wrap: wrap;
+        gap: 0.4rem;
+    }
+    .seg__item + .seg__item {
+        margin-left: 0;
+    }
+    .service-actions {
+        width: 100%;
+    }
+
+    /* Session rows: drop the duration/hits meta under the main content and
+       left-align it so a narrow screen reads top-to-bottom. */
+    .srow__meta {
+        width: 100%;
+        text-align: left;
+        gap: 1.75rem;
+        padding-top: 0.3rem;
+        border-top: 1px dashed var(--global-divider-color);
+    }
+
+    /* Two-up KPI cells: slightly smaller numbers so they don't feel cramped. */
+    .kpi-cell__num {
+        font-size: 1.4rem;
+    }
+    .kpi-cell {
+        padding: 0.5rem 0.75rem;
+    }
+
+    /* Reclaim width in the single-session timeline. */
+    .timeline {
+        padding-left: 1rem;
+        margin-left: 0.25rem;
+    }
+}
