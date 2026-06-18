@@ -585,16 +585,39 @@ h4.heading {
     font-size: 0.74rem;
 }
 
-/* ---- Surfaces: roomy, rounded, gently lifted ------------------------------- */
+/* ---- Flat surfaces: one plane, no nested boxes ----------------------------- */
+/* The whole point of the revamp: kill the card-in-card nesting, shadows and
+   borders. Everything sits on the page background, structured by bold type,
+   whitespace, the accent and the breakdown bars instead of stacked panels. */
+.app-shell {
+    padding-left: 1.4rem;
+    padding-right: 1.4rem;
+}
+
 .reading-surface {
-    padding: var(--surface-pad-y) var(--surface-pad-x);
-    border-radius: 16px;
-    box-shadow: var(--card-shadow);
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
 }
 
 .card {
-    border-radius: 14px;
-    box-shadow: var(--card-shadow);
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0;
+}
+
+/* Tables become flat lists: no zebra, no row rules — the bars carry structure. */
+.table tbody,
+.table thead {
+    background: transparent;
+}
+
+.table th,
+.table td {
+    border-bottom: none;
+    padding: 0.5rem 0.4rem;
 }
 
 /* ---- Sticky filter bar (desktop): title + filters stay pinned -------------- */
@@ -602,10 +625,33 @@ h4.heading {
     position: sticky;
     top: 0;
     z-index: 30;
-    background: var(--global-card-bg-color);
+    /* Opaque page background so scrolled content passes cleanly underneath. */
+    background: var(--global-bg-color);
     padding-top: 0.85rem;
     padding-bottom: 0.85rem;
     border-bottom: 1px solid var(--global-divider-color);
+}
+
+/* ---- Most popular pages: the hero of the overview -------------------------- */
+.pages-hero {
+    margin-bottom: 2rem;
+}
+
+@media (min-width: 768px) {
+    /* Span the full breakdown grid so it leads, full width, at the top. */
+    .pages-hero {
+        grid-column: 1 / -1;
+    }
+}
+
+.pages-hero > .supra {
+    font-size: 0.82rem;
+    margin-bottom: 0.4rem;
+}
+
+.pages-hero .table td {
+    padding: 0.6rem 0.4rem;
+    font-size: 1.05rem;
 }
 
 /* ---- KPIs: big, bold, joyful ----------------------------------------------- */
@@ -685,17 +731,14 @@ h4.heading {
 
 /* ---- Phone layout (below a17t's md breakpoint) ----------------------------- */
 @media (max-width: 767px) {
-    :root {
-        --surface-pad-x: 1.05rem;
-        --surface-pad-y: 1.15rem;
-    }
-
     body {
         font-size: 1rem;
     }
 
-    .reading-surface {
-        border-radius: 12px;
+    /* Edge-to-edge: only a hair of gutter so content gets the full width. */
+    .app-shell {
+        padding-left: 0.7rem;
+        padding-right: 0.7rem;
     }
 
     /* A tall pinned header would eat the small viewport, so let it scroll away

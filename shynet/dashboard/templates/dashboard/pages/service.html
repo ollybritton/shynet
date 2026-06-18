@@ -106,22 +106,16 @@ data loss). The querystrings are built to preserve the other active filters.
 </div>
 {% endif %}
 <div id="card-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-    <div class="card limited-height py-2">
-        <p class="supra p-2">{% trans 'Locations' %}</p>
+    <div class="card pages-hero limited-height py-2">
+        <p class="supra p-2">{% trans 'Most popular pages' %}</p>
         <table class="table">
-            <thead class="text-sm">
-                <tr>
-                    <th>{% trans 'Location' %}</th>
-                    <th class="rf">{% trans 'Hits' %}</th>
-                </tr>
-            </thead>
             <tbody>
                 {% for location in stats.locations %}
                 <tr>
                     <td class="truncate w-full max-w-0 relative">
                         {% include 'dashboard/includes/bar.html' with count=location.count max=stats.locations.0.count total=stats.hit_count %}
                         <div class="relative flex items-center">
-                            {% if location.location %}{{location.location|urldisplay}}{% else %}<span class="is-unknown">{% trans 'Unknown' %}</span>{% endif %}
+                            {% if location.location %}{{location.location|path_display}}{% else %}<span class="is-unknown">{% trans 'Unknown' %}</span>{% endif %}
                         </div>
                     </td>
                     <td>
@@ -135,15 +129,14 @@ data loss). The querystrings are built to preserve the other active filters.
                 </tr>
                 {% empty %}
                 <tr>
-                    <td><span class="is-unknown">{% trans 'No data yet...' %}</span></td>
+                    <td><span class="is-unknown">{% trans 'No pages viewed yet...' %}</span></td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
         {% if stats.locations.count == RESULTS_LIMIT %}
-            <hr class="sep h-8 md:h-12">
-            <a href="{% contextual_url 'dashboard:service_location_list' service.uuid %}" class="seg__item">
-                {% trans 'View more locations' %} &rarr;
+            <a href="{% contextual_url 'dashboard:service_location_list' service.uuid %}" class="seg__item mt-2">
+                {% trans 'View all pages' %} &rarr;
             </a>
         {% endif %}
     </div>
