@@ -654,6 +654,26 @@ h4.heading {
     font-size: 1.05rem;
 }
 
+/* Full-width breakdown blocks within the 2-col grid (referrers, tech strip). */
+@media (min-width: 768px) {
+    .col-full {
+        grid-column: 1 / -1;
+    }
+}
+
+/* Tech strip: OS / Browser / Device side by side in one compact band. */
+.tech-strip__cols {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .tech-strip__cols {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
 /* ---- KPIs: big, bold, joyful ----------------------------------------------- */
 .kpi-cell {
     padding: 1.15rem 1.25rem;
