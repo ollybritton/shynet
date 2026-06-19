@@ -197,6 +197,20 @@ def urldisplay(url):
 
 
 @register.filter
+def path_only(url):
+    """Return just the path (+query) of a URL as plain text, host dropped.
+    Used for the inline page-journey snippet in session rows. Output is plain
+    text (autoescaped by the template); no markup is produced here."""
+    if isinstance(url, str) and url.startswith("http"):
+        parsed = urlparse(url)
+        path = parsed.path or "/"
+        if parsed.query:
+            path += "?" + parsed.query
+        return path
+    return url
+
+
+@register.filter
 def path_display(url):
     """Link to a hit's full URL but show only its path (+query), dropping the
     host to save space in the session timeline. Only http(s) URLs are linkified

@@ -34,7 +34,7 @@
     --neg-dark: #b71c1c;
     --warn: #efcc00;
 
-    --bar-fill: rgba(168, 61, 109, 0.12);
+    --bar-fill: rgba(168, 61, 109, 0.20);
     --table-bg: #fafafa;
     --table-head-bg: #f0f0f0;
     --table-border: #eee;
@@ -55,7 +55,7 @@ html[data-theme="dark"] {
     --global-divider-color: #424246;
     --global-code-bg-color: #2c3237;
 
-    --bar-fill: rgba(38, 152, 186, 0.18);
+    --bar-fill: rgba(38, 152, 186, 0.30);
     --table-bg: #15252d;
     --table-head-bg: #182932;
     --table-border: #1e3440;
@@ -581,8 +581,45 @@ h4.heading {
 }
 
 .supra {
+    font-weight: 700;
+    font-size: 0.76rem;
+    color: var(--global-text-color);
+}
+
+/* Section headers (the p-2 supra labels) get the accent + a chunky leading
+   block, so each section announces itself rather than whispering. */
+.supra.p-2 {
+    color: var(--global-theme-color);
+    font-size: 0.82rem;
+    position: relative;
+    padding-left: 0.85rem;
+}
+
+.supra.p-2::before {
+    content: "";
+    position: absolute;
+    left: 0.15rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 0.85em;
+    border-radius: 2px;
+    background: var(--global-theme-color);
+}
+
+/* Heavier, higher-contrast body text — the old weights were too thin. */
+.table td {
+    font-weight: 500;
+    color: var(--global-text-color);
+}
+
+.table td a {
     font-weight: 600;
-    font-size: 0.74rem;
+}
+
+/* Punchier breakdown bars: a solid accent left edge anchors each row. */
+.bar-fill {
+    border-left: 3px solid color-mix(in srgb, var(--global-theme-color) 55%, transparent);
 }
 
 /* ---- Flat surfaces: one plane, no nested boxes ----------------------------- */
@@ -708,12 +745,55 @@ h4.heading {
 }
 
 .srow {
-    padding: 0.95rem 0.4rem;
+    /* Horizontal padding matches the section headings (p-2) so the recent
+       sessions list lines up with the rest of the page. */
+    padding: 0.85rem 0.5rem;
     gap: 1rem;
+    border-bottom: 1px solid var(--global-divider-color);
+    transition: background-color 120ms ease;
+}
+
+.srow:hover {
+    background: var(--bar-fill);
 }
 
 .srow__num {
     font-size: 1.05rem;
+    font-weight: 600;
+}
+
+/* Inline page journey: little page chips joined by accent arrows, so you can
+   read where a visitor went without opening the session. */
+.srow__journey {
+    margin-top: 0.4rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem 0.35rem;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    line-height: 1.4;
+}
+
+.srow__page {
+    color: var(--global-text-color);
+    background: var(--bar-fill);
+    border-radius: 5px;
+    padding: 0.05rem 0.4rem;
+    max-width: 30ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.srow__arrow {
+    color: var(--global-theme-color);
+    font-weight: 700;
+}
+
+.srow__more {
+    color: var(--global-text-color-light);
+    font-weight: 600;
 }
 
 .timeline__card {

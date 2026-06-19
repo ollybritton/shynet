@@ -35,6 +35,10 @@ flow straight into the existing #session-rows container.
                 {% if session.asn %}{{ session.asn }}{% else %}<span class="is-unknown">{% trans 'Unknown network' %}</span>{% endif %}
             </span>
         </div>
+        {% comment %}Inline page journey so you can read the visit without clicking in.{% endcomment %}
+        <div class="srow__journey">
+            {% for hit in session.hit_set.all|slice:":4" %}<span class="srow__page">{{ hit.location|path_only|default:"/" }}</span>{% if not forloop.last %}<span class="srow__arrow">&rarr;</span>{% endif %}{% empty %}<span class="is-unknown">{% trans 'No pages recorded' %}</span>{% endfor %}{% if session.num_hits > 4 %}<span class="srow__more">+{{ session.num_hits|add:"-4" }}</span>{% endif %}
+        </div>
     </div>
     <div class="srow__meta">
         <div>

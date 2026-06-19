@@ -2,7 +2,7 @@ from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.cache import cache
-from django.db.models import Q, Count, Min, Max, F
+from django.db.models import Q, Count, Min, Max, F, Prefetch
 from django.shortcuts import get_object_or_404, render, reverse, redirect
 from django.views.generic import (
     CreateView,
@@ -87,6 +87,14 @@ class ServiceView(
                 start_time__gt=self.get_start_date(),
             )
             .annotate(num_hits=Count("hit"))
+            .prefetch_related(
+                Prefetch(
+                    "hit_set",
+                    queryset=Hit.objects.order_by("start_time").only(
+                        "session_id", "location", "start_time"
+                    ),
+                )
+            )
             .order_by("-start_time")
         )
         if self.get_segment() == "humans":
@@ -173,6 +181,14 @@ class ServiceSessionsListView(
                 start_time__gt=self.get_start_date(),
             )
             .annotate(num_hits=Count("hit"))
+            .prefetch_related(
+                Prefetch(
+                    "hit_set",
+                    queryset=Hit.objects.order_by("start_time").only(
+                        "session_id", "location", "start_time"
+                    ),
+                )
+            )
             .order_by("-start_time")
         )
         if self.get_segment() == "humans":
